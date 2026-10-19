@@ -1,0 +1,333 @@
+// Conexión con la planilla del Drive (ver drive/LEEME.md). Va en todas las
+// páginas, DESPUÉS de los <script> de datos y ANTES del código de la página.
+//
+// Hace tres cosas:
+//   1. Datos de la empresa (lotes, historial, presupuesto base): si la página
+//      no los pudo cargar de un archivo (porque la app está publicada sin
+//      ellos), los toma de la copia guardada en este equipo o los baja del Drive.
+//   2. Sincroniza lo que se carga (stock y presupuesto): sube lo nuevo y baja
+//      lo de los demás. Funciona sin señal: guarda en el equipo y sincroniza
+//      cuando vuelve la conexión.
+//   3. Muestra el estado abajo a la izquierda.
+(function (g) {
+  "use strict";
+
+  var CONFIG = "iag_nube";            // {url, clave}
+  var BASE = "iag_nube_base";         // {clave localStorage: {tabla: {id: json}}} — lo último en común con el Drive
+  var REV = "iag_nube_rev";           // última revisión bajada
+  var ULTIMA = "iag_nube_ultima";     // fecha de la última sincronización buena
+
+  // ── Datos de la empresa ───────────────────────────────────────────────
+  var ARCHIVOS = [
+    { nombre: "lotes-tarpuy", globales: ["LOTES_META", "LOTES"], falta: "LOTES_FALTA" },
+    { nombre: "aplicaciones-tarpuy", globales: ["APLIC_META", "APLIC_DIC", "APLICACIONES", "APLIC_GRUPOS"], falta: "APLIC_FALTA" },
+    { nombre: "presupuesto-tarpuy", globales: ["PRESUPUESTO_BASE"], falta: "PRESUPUESTO_FALTA" },
+  ];
+  var claveArchivo = function (n) { return "iag_archivo_" + n; };
+
+  function leer(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  var setItemOriginal = Storage.prototype.setItem;
+  function escribir(k, v) { try { setItemOriginal.call(localStorage, k, typeof v === "string" ? v : JSON.stringify(v)); return true; } catch (e) { return false; } }
+
+  function config() {
+    var c = leer(CONFIG);
+    return c && c.url && c.clave ? c : null;
+  }
+
+  // Un enlace «…#conectar=…» deja este equipo conectado (lo genera conectar.html)
+  (function deEnlace() {
+    var m = (location.hash || "").match(/conectar=([^&]+)/);
+    if (!m) return;
+    try {
+      var c = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, "+").replace(/_/g, "/")))));
+      if (c.url && c.clave) escribir(CONFIG, c);
+    } catch (e) { /* enlace roto: se ignora */ }
+    history.replaceState(null, "", location.pathname + location.search);
+  })();
+
+  /** Lo que la página no pudo cargar de un archivo, desde la copia del equipo. */
+  var faltan = [];
+  ARCHIVOS.forEach(function (a) {
+    if (g[a.globales[0]] !== undefined) return;            // vino del archivo (en la Mac, por ejemplo)
+    var texto = null;
+    try { texto = localStorage.getItem(claveArchivo(a.nombre)); } catch (e) { texto = null; }
+    if (texto) {
+      try { (0, eval)(texto); g[a.falta] = false; return; } catch (e) { /* copia rota: se vuelve a bajar */ }
+    }
+    faltan.push(a);
+  });
+  // Sólo importa si la página usa ese archivo: lo sabe porque su <script> falló
+  var necesarios = faltan.filter(function (a) { return g[a.falta]; });
+
+  // ── Llamadas al Apps Script ───────────────────────────────────────────
+  function pedir(params) {
+    var c = config();
+    var q = Object.keys(params).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");
+    return fetch(c.url + "?" + q + "&clave=" + encodeURIComponent(c.clave)).then(function (r) { return r.json(); });
+  }
+  function enviar(cuerpo) {
+    var c = config();
+    cuerpo.clave = c.clave;
+    // text/plain: así no hay consulta previa de CORS (Apps Script no la contesta)
+    return fetch(c.url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(cuerpo) })
+      .then(function (r) { return r.json(); });
+  }
+
+  function bajarArchivos(lista) {
+    return Promise.all(lista.map(function (a) {
+      return pedir({ accion: "archivo", nombre: a.nombre }).then(function (r) {
+        if (!r.ok) throw new Error(r.error || "no se pudo bajar " + a.nombre);
+        if (!escribir(claveArchivo(a.nombre), r.contenido)) throw new Error("no entra en la memoria del navegador");
+        escribir(claveArchivo(a.nombre) + "_subido", r.subido || "");
+      });
+    }));
+  }
+
+  // ── Qué se sincroniza ─────────────────────────────────────────────────
+  // Cada colección del estado de una página es una «tabla» de registros con id.
+  var porId = function (campo) {
+    return {
+      sacar: function (arr) { var o = {}; (arr || []).forEach(function (x) { if (x && x[campo] != null) o[x[campo]] = x; }); return o; },
+      poner: function (estado, prop, id, valor) {
+        var arr = estado[prop] = estado[prop] || [];
+        var i = -1;
+        for (var j = 0; j < arr.length; j++) if (String(arr[j][campo]) === String(id)) { i = j; break; }
+        if (valor === null) { if (i >= 0) arr.splice(i, 1); }
+        else if (i >= 0) arr[i] = valor; else arr.push(valor);
+      },
+    };
+  };
+  var mapa = {
+    sacar: function (obj) { return obj || {}; },
+    poner: function (estado, prop, id, valor) {
+      var o = estado[prop] = estado[prop] || {};
+      if (valor === null) delete o[id]; else o[id] = valor;
+    },
+  };
+  var CONFIG_STOCK = ["camposSociedad", "otSeq", "remitoSeq", "idsEstables"];
+  var unico = {   // los datos sueltos de configuración, como un solo registro
+    sacar: function (estado) { var v = {}; CONFIG_STOCK.forEach(function (k) { if (estado[k] !== undefined) v[k] = estado[k]; }); return { general: v }; },
+    poner: function (estado, prop, id, valor) { if (valor) CONFIG_STOCK.forEach(function (k) { if (valor[k] !== undefined) estado[k] = valor[k]; }); },
+  };
+
+  var CLAVES = {
+    iag_stock_v2: {
+      "stock.depositos": { prop: "depositos", t: porId("id") },
+      "stock.lotes": { prop: "lotes", t: porId("id") },
+      "stock.catalogo": { prop: "catalogo", t: porId("id") },
+      "stock.movimientos": { prop: "movimientos", t: porId("id") },
+      "stock.ordenes": { prop: "ordenes", t: porId("id") },
+      "stock.pedidos": { prop: "pedidos", t: porId("id") },
+      "stock.config": { prop: null, t: unico },
+    },
+    iag_presupuesto_v1: {
+      "pres.lotes": { prop: "lotes", t: porId("uid") },
+      "pres.modelos": { prop: "modelos", t: mapa },
+      "pres.precios": { prop: "precios", t: mapa },
+      "pres.siembra": { prop: "siembra", t: mapa },
+    },
+  };
+  var claveDeTabla = {};
+  Object.keys(CLAVES).forEach(function (k) { Object.keys(CLAVES[k]).forEach(function (t) { claveDeTabla[t] = k; }); });
+
+  /** {tabla: {id: json}} del estado guardado en una clave. */
+  function foto(k, estado) {
+    var out = {};
+    Object.keys(CLAVES[k]).forEach(function (t) {
+      var def = CLAVES[k][t];
+      var regs = def.t.sacar(def.prop ? estado[def.prop] : estado);
+      var o = out[t] = {};
+      Object.keys(regs).forEach(function (id) { o[id] = JSON.stringify(regs[id]); });
+    });
+    return out;
+  }
+
+  /** Cambios de este equipo que todavía no están en el Drive. */
+  function pendientes() {
+    var base = leer(BASE) || {}, n = 0, regs = [];
+    Object.keys(CLAVES).forEach(function (k) {
+      var estado = leer(k);
+      if (!estado) return;
+      var cur = foto(k, estado), b = base[k] || {};
+      Object.keys(cur).forEach(function (t) {
+        var bt = b[t] || {};
+        Object.keys(cur[t]).forEach(function (id) {
+          if (cur[t][id] !== bt[id]) { n++; regs.push({ k: k, tabla: t, id: id, valor: JSON.parse(cur[t][id]), json: cur[t][id] }); }
+        });
+        Object.keys(bt).forEach(function (id) {
+          if (!(id in cur[t])) { n++; regs.push({ k: k, tabla: t, id: id, borrado: true }); }
+        });
+      });
+    });
+    return { n: n, regs: regs };
+  }
+
+  var avisar = {};    // clave → funciones de la página para recargar su estado
+  var enCurso = null, ultimoError = "";
+
+  /**
+   * Una vuelta: primero se baja lo de los demás y después se sube lo propio.
+   * Lo bajado no pisa un registro que este equipo cambió y todavía no subió
+   * (lo propio gana y se sube enseguida), salvo en la primera sincronización
+   * de una clave: ahí el Drive manda, para no subir los datos de arranque de
+   * un equipo nuevo encima de lo que ya cargaron los demás.
+   */
+  function sincronizar() {
+    if (!config()) { pintarEstado(); return Promise.resolve(); }
+    if (enCurso) return enCurso;
+    if (!navigator.onLine) { pintarEstado(); return Promise.resolve(); }
+    var desde = Number(leer(REV) || 0);
+    enCurso = pedir({ accion: "cambios", desde: desde }).then(function (r) {
+      if (!r.ok) throw new Error(r.error === "clave" ? "clave incorrecta" : r.error);
+      var base = leer(BASE) || {};
+      var ultimos = {};
+      r.registros.forEach(function (x) { ultimos[x.tabla + "\u0001" + x.id] = x; });
+      var tocadas = {}, estados = {}, fotos = {}, primeras = {};
+      Object.keys(ultimos).forEach(function (kk) {
+        var x = ultimos[kk], k = claveDeTabla[x.tabla];
+        if (!k) return;
+        if (!estados[k]) {
+          primeras[k] = !base[k];
+          estados[k] = leer(k) || {};
+          fotos[k] = foto(k, estados[k]);
+        }
+        var b = base[k] = base[k] || {}, bt = b[x.tabla] = b[x.tabla] || {};
+        var cur = fotos[k][x.tabla] = fotos[k][x.tabla] || {};
+        var localCambio = !primeras[k] && cur[x.id] !== bt[x.id];
+        if (!localCambio) {
+          var def = CLAVES[k][x.tabla];
+          def.t.poner(estados[k], def.prop, x.id, x.borrado ? null : JSON.parse(x.json));
+          if (x.borrado) delete cur[x.id]; else cur[x.id] = x.json;
+          tocadas[k] = true;
+        }
+        if (x.borrado) delete bt[x.id]; else bt[x.id] = x.json;
+      });
+      Object.keys(tocadas).forEach(function (k) { escribir(k, estados[k]); });
+      // Una clave con base vacía queda marcada como sincronizada aunque el Drive no tuviera nada
+      Object.keys(CLAVES).forEach(function (k) { if (!base[k] && leer(k)) base[k] = {}; });
+      escribir(BASE, base);
+      escribir(REV, r.rev);
+      Object.keys(tocadas).forEach(function (k) { (avisar[k] || []).forEach(function (fn) { try { fn(); } catch (e) { /* la página se arregla sola al recargar */ } }); });
+      return subir();
+    }).then(function () {
+      ultimoError = "";
+      escribir(ULTIMA, new Date().toISOString());
+    }).catch(function (e) {
+      ultimoError = navigator.onLine ? String(e.message || e) : "";
+    }).then(function () { enCurso = null; pintarEstado(); });
+    pintarEstado();
+    return enCurso;
+  }
+
+  function subir() {
+    var p = pendientes();
+    if (!p.n) return Promise.resolve();
+    var u = g.IAgUsuario && g.IAgUsuario.actual();
+    var ahora = new Date().toISOString();
+    return enviar({
+      accion: "guardar", usuario: u ? u.id : "",
+      registros: p.regs.map(function (x) { return { tabla: x.tabla, id: x.id, valor: x.valor, borrado: !!x.borrado, actualizado: ahora }; }),
+    }).then(function (r) {
+      if (!r.ok) throw new Error(r.error === "clave" ? "clave incorrecta" : r.error);
+      var base = leer(BASE) || {};
+      p.regs.forEach(function (x) {
+        var b = base[x.k] = base[x.k] || {}, bt = b[x.tabla] = b[x.tabla] || {};
+        if (x.borrado) delete bt[x.id]; else bt[x.id] = x.json;
+      });
+      escribir(BASE, base);
+      escribir(REV, Math.max(Number(leer(REV) || 0), r.rev));
+    });
+  }
+
+  // Cada vez que una página guarda stock o presupuesto, se sincroniza a los pocos segundos
+  var demora = null;
+  Storage.prototype.setItem = function (k, v) {
+    setItemOriginal.apply(this, arguments);
+    if (this === localStorage && CLAVES[k] && config()) {
+      clearTimeout(demora);
+      demora = setTimeout(sincronizar, 3000);
+      pintarEstado();
+    }
+  };
+
+  // ── Estado en pantalla ────────────────────────────────────────────────
+  var pastilla = null;
+  function pintarEstado() {
+    if (!document.body) return;
+    if (!pastilla) {
+      pastilla = document.createElement("a");
+      pastilla.href = "conectar.html";
+      pastilla.id = "nube-estado";
+      pastilla.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:900;font:600 12.5px system-ui,-apple-system,sans-serif;" +
+        "padding:6px 11px;border-radius:20px;text-decoration:none;box-shadow:0 2px 8px rgba(15,23,42,.15);background:#fff;color:#334155;border:1px solid #e2e8f0";
+      document.body.appendChild(pastilla);
+    }
+    var c = config(), txt, color = "#334155";
+    if (!c) { txt = "☁ Sin conectar al Drive · conectar"; color = "#92400e"; }
+    else {
+      var n = pendientes().n;
+      var ult = leer(ULTIMA);
+      var hora = ult ? new Date(ult).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : "";
+      if (enCurso) txt = "☁ Sincronizando…";
+      else if (ultimoError) { txt = "☁ Error: " + ultimoError; color = "#b91c1c"; }
+      else if (!navigator.onLine) { txt = "☁ Sin señal" + (n ? " · " + n + " cambio(s) por subir" : ""); color = "#92400e"; }
+      else if (n) { txt = "☁ " + n + " cambio(s) por subir"; color = "#92400e"; }
+      else txt = "☁ Sincronizado" + (hora ? " " + hora : "");
+    }
+    pastilla.textContent = txt;
+    pastilla.style.color = color;
+  }
+
+  // ── Arranque ──────────────────────────────────────────────────────────
+  function cartel(html) {
+    var d = document.createElement("div");
+    d.style.cssText = "position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,-apple-system,sans-serif";
+    d.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px 24px;max-width:420px;text-align:center;font-size:15px;color:#0f172a;line-height:1.5">' + html + "</div>";
+    document.body.appendChild(d);
+    return d;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    pintarEstado();
+    if (necesarios.length) {
+      if (!config()) {
+        cartel("<b>Faltan los datos de la empresa</b><br>Esta copia de la app todavía no está conectada al Drive." +
+          '<br><br><a href="conectar.html" style="color:#1d4ed8;font-weight:700">Conectar →</a>');
+      } else if (!navigator.onLine) {
+        cartel("<b>Faltan los datos de la empresa</b><br>Hace falta señal una vez para bajarlos del Drive. Después anda sin señal.");
+      } else {
+        var c = cartel("<b>Bajando los datos de la empresa del Drive…</b><br>Es una sola vez: después quedan en este equipo.");
+        bajarArchivos(necesarios).then(function () { location.reload(); }).catch(function (e) {
+          c.firstChild.innerHTML = "<b>No se pudieron bajar los datos</b><br>" + String(e.message || e) +
+            '<br><br><a href="conectar.html" style="color:#1d4ed8;font-weight:700">Revisar la conexión →</a>';
+        });
+      }
+      return;
+    }
+    sincronizar();
+  });
+  g.addEventListener("online", function () { sincronizar(); });
+  g.addEventListener("offline", pintarEstado);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) sincronizar(); });
+  setInterval(function () { if (!document.hidden) sincronizar(); }, 60000);
+
+  g.IAgNube = {
+    config: config,
+    conectar: function (url, clave) { escribir(CONFIG, { url: url.trim(), clave: clave.trim() }); pintarEstado(); },
+    desconectar: function () { try { localStorage.removeItem(CONFIG); } catch (e) { /* nada */ } pintarEstado(); },
+    probar: function () { return pedir({ accion: "probar" }); },
+    subirArchivo: function (nombre, contenido) { return enviar({ accion: "archivo", nombre: nombre, contenido: contenido }); },
+    bajarArchivos: function () { return bajarArchivos(ARCHIVOS); },
+    ARCHIVOS: ARCHIVOS,
+    sincronizar: sincronizar,
+    pendientes: function () { return pendientes().n; },
+    /** La página avisa cómo recargar su estado cuando llegan cambios de otros. */
+    alCambiar: function (clave, fn) { (avisar[clave] = avisar[clave] || []).push(fn); },
+    enlace: function () {
+      var c = config();
+      if (!c) return "";
+      var b = btoa(unescape(encodeURIComponent(JSON.stringify(c)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      return location.origin + location.pathname.replace(/[^/]*$/, "") + "index.html#conectar=" + b;
+    },
+  };
+})(window);

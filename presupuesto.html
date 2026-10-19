@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Presupuesto · I.Ag</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f0f4f8; color: #1e293b; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  header { background: #1e293b; color: #fff; padding: 14px 24px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header .logo { font-size: 18px; font-weight: 800; color: #e2b04a; letter-spacing: 0.08em; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header p { font-size: 12px; color: #94a3b8; }
+  header .spacer { flex: 1; }
+  .quien { font-size: 12px; color: #e2e8f0; display: flex; align-items: baseline; gap: 6px; }
+  .quien b { font-weight: 700; }
+  .quien .rol { font-size: 10.5px; color: #94a3b8; }
+  header .hbtn { background: #334155; color: #e2e8f0; border: none; border-radius: 7px;
+    padding: 5px 11px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  header .hbtn:hover { background: #475569; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 16px 64px; }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 2px solid #e2e8f0; margin-bottom: 22px; flex-wrap: wrap; }
+  .tab { background: none; border: none; padding: 10px 18px; font-size: 14px; font-weight: 700; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: inherit; }
+  .tab:hover { color: #64748b; }
+  .tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .block { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px 22px; margin-bottom: 18px; }
+  .block-header { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; flex-wrap: wrap; }
+  .block-title { font-size: 15px; font-weight: 800; color: #0f172a; }
+  .block-sub { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+  .spacer { flex: 1; }
+  .fl { font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px; }
+  input[type=number], input[type=text], select {
+    width: 100%; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px;
+    padding: 7px 9px; font-size: 14px; color: #0f172a; font-family: inherit; outline: none;
+  }
+  input:focus, select:focus { border-color: #c4b5fd; background: #fff; }
+
+  button.btn { font-family: inherit; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid transparent; }
+  button.btn:hover { filter: brightness(0.95); }
+  .btn-primary { background: #7c3aed; color: #fff; }
+  .btn-ghost { background: #fff; color: #475569; border-color: #cbd5e1 !important; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .link { background: none; border: none; color: #7c3aed; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; padding: 0; }
+  .link:hover { text-decoration: underline; }
+  .link.del { color: #b91c1c; }
+
+  .tbl-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f8fafc; padding: 7px 8px; text-align: left; color: #64748b; font-weight: 700; border-bottom: 1.5px solid #e2e8f0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td input, td select { padding: 4px 6px; font-size: 13px; }
+  tr.sel td { background: #f5f3ff; }
+  .empty { text-align: center; color: #94a3b8; padding: 22px 10px; font-size: 13px; }
+  .hint { font-size: 11.5px; color: #94a3b8; line-height: 1.6; margin-top: 9px; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 9px 13px; font-size: 12px; color: #92400e; line-height: 1.6; margin-bottom: 14px; }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-family: inherit; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 20px; border: 1.5px solid #cbd5e1; background: #fff; color: #475569; cursor: pointer; }
+  .chip.on { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  .b-amber { background: #fef3c7; color: #b45309; }
+  .b-red { background: #fee2e2; color: #b91c1c; }
+  .b-gray { background: #f1f5f9; color: #64748b; }
+  .b-purple { background: #f3e8ff; color: #7c3aed; }
+
+  /* ── Lotes ─────────────────────────────────────────────────────────────── */
+  .mapa-wrap { display: grid; grid-template-columns: 1fr 260px; gap: 14px; }
+  @media (max-width: 860px) { .mapa-wrap { grid-template-columns: 1fr; } }
+  #mapa { height: 480px; border-radius: 10px; background: #dbe4ec; }
+  .leyenda { font-size: 12.5px; }
+  .leyenda .it { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+  .leyenda .sw { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(0,0,0,.15); }
+  .leyenda .nm { flex: 1; font-weight: 700; color: #0f172a; }
+  .leyenda .ha { color: #64748b; font-variant-numeric: tabular-nums; }
+  .etiq-lote { background: none; border: none; box-shadow: none; font-size: 10.5px; font-weight: 800;
+    color: #fff; white-space: nowrap; padding: 0; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 5px rgba(0,0,0,.95); }
+  .etiq-lote::before { display: none; }
+  .mapa-lejos .etiq-lote { display: none; }   /* de lejos los nombres se pisan */
+
+  .region-t { font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .05em; margin: 16px 0 8px; }
+  .region-t:first-child { margin-top: 0; }
+  .campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .campo { font-family: inherit; text-align: left; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 9px 11px;
+    background: #fff; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+  .campo:hover { border-color: #cbd5e1; }
+  .campo.on { border-color: #7c3aed; background: #f5f3ff; }
+  .campo .n { font-size: 13.5px; font-weight: 800; color: #0f172a; }
+  .campo .m { font-size: 11px; color: #94a3b8; }
+  .campo .c { font-size: 11px; color: #475569; font-weight: 700; }
+  .masivo { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; background: #f8fafc; border-radius: 9px; padding: 9px 11px; margin: 12px 0 10px; }
+  .masivo > div { min-width: 140px; }
+  .pt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.15); }
+
+  /* ── Modelos ───────────────────────────────────────────────────────────── */
+  .momento td { background: #f8fafc; font-size: 11.5px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tot-fam { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .tot-fam div { background: #f8fafc; border-radius: 8px; padding: 7px 11px; font-size: 12px; color: #475569; }
+  .lote-modelo { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-top: 14px; }
+  .lote-modelo-cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .pisar { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 9px; padding: 10px 13px; font-size: 12.5px; color: #4c1d95; margin-bottom: 12px; line-height: 1.5; }
+  .tot-fam b { color: #0f172a; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+  /* ── Resultados ────────────────────────────────────────────────────────── */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  @media (max-width: 700px) { .tiles { grid-template-columns: 1fr; } }
+  .tile { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 13px 15px; cursor: pointer; }
+  .tile.on { border-color: #7c3aed; box-shadow: 0 0 0 1.5px #7c3aed inset; }
+  .tile .t { font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .05em; }
+  .tile .v { font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+  .tile .s { font-size: 12px; color: #64748b; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .barras { display: grid; grid-template-columns: minmax(90px, 190px) 1fr; column-gap: 10px; row-gap: 2px; align-items: center; font-size: 12px; }
+  .barras .et { color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; padding: 3px 0; }
+  .barras .pista { position: relative; height: 18px; display: flex; align-items: center; gap: 6px; cursor: default; }
+  .barras .barra { height: 12px; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .barras .val { color: #52514e; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 11.5px; }
+  .barras .pista:hover .barra { filter: brightness(.88); }
+  .fam-t { font-size: 12px; font-weight: 800; color: #475569; margin: 14px 0 6px; }
+  .fam-t:first-child { margin-top: 0; }
+  .ley-serie { display: flex; gap: 14px; font-size: 12px; color: #475569; margin-bottom: 10px; }
+  .ley-serie span { display: inline-flex; align-items: center; gap: 6px; }
+  .ley-serie i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  #tip { position: fixed; z-index: 99; background: #0f172a; color: #fff; font-size: 12px; padding: 7px 10px; border-radius: 8px;
+    pointer-events: none; opacity: 0; transition: opacity .1s; max-width: 260px; line-height: 1.5; }
+
+  .modal-back { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-card { background: #fff; border-radius: 14px; max-width: 760px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(15,23,42,.3); }
+  .modal-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 20px 12px; border-bottom: 1px solid #e2e8f0; }
+  .modal-head .mt { font-size: 16px; font-weight: 800; color: #0f172a; }
+  .modal-head .ms { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .modal-x { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 0 4px; font-family: inherit; }
+  .modal-body { padding: 14px 20px 20px; overflow-y: auto; }
+  .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 600px) { .g3 { grid-template-columns: 1fr; } }
+
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(90px); background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; opacity: 0; transition: all .22s; z-index: 1100; }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">I.Ag</span>
+  <h1>Presupuesto 2026-27</h1>
+  <p>Planificación · datos en este navegador</p>
+  <span class="spacer"></span>
+  <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
+  <a class="hbtn" href="index.html?v=6" style="text-decoration:none">Inicio</a>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="lotes">Lotes y cultivos</button>
+    <button class="tab" data-tab="modelos">Modelos técnicos</button>
+    <button class="tab" data-tab="precios">Precios</button>
+    <button class="tab" data-tab="result">Resultados</button>
+  </div>
+
+  <!-- ══ LOTES ══ -->
+  <div class="panel active" id="panel-lotes">
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Mapa de cultivos</div>
+          <div class="block-sub">Tocá un lote para cambiarle el cultivo, la superficie o el manejo</div>
+        </div>
+        <span class="spacer"></span>
+        <div class="chips" id="chips-mapa-reg">
+          <button class="chip on" data-mreg="NORTE">Las Maravillas</button>
+          <button class="chip" data-mreg="RESTO">Resto</button>
+        </div>
+        <div class="chips" id="chips-ciclo">
+          <button class="chip on" data-ciclo="c1">1º cultivo</button>
+          <button class="chip" data-ciclo="c2">2º cultivo</button>
+        </div>
+      </div>
+      <div class="mapa-wrap">
+        <div id="mapa"></div>
+        <div class="leyenda" id="leyenda"></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Lotes</div>
+          <div class="block-sub">Elegí el campo y editá cada lote. Todo se recalcula al instante.</div>
+        </div>
+        <span class="spacer"></span>
+        <button class="btn btn-primary btn-sm" id="exportar-plan">⬇ Exportar planificación</button>
+      </div>
+      <div id="lista-campos"></div>
+      <div id="lista-lotes"></div>
+    </div>
+  </div>
+
+  <!-- ══ MODELOS ══ -->
+  <div class="panel" id="panel-modelos">
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Modelo técnico por cultivo y región</div>
+          <div class="block-sub">Lo esperable por ha = % de la superficie que lo recibe × dosis × aplicaciones. Arranca con lo que pasó en 25-26.</div>
+        </div>
+      </div>
+      <div class="chips" id="chips-modelos" style="margin-bottom:14px"></div>
+      <div id="modelo"></div>
+    </div>
+  </div>
+
+  <!-- ══ PRECIOS ══ -->
+  <div class="panel" id="panel-precios">
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Precios de los insumos</div>
+          <div class="block-sub">US$ por litro, kilo o bolsa. Arranca con el precio ponderado de las compras 25-26.</div>
+        </div>
+        <span class="spacer"></span>
+        <label style="font-size:12px;color:#475569;display:flex;gap:6px;align-items:center;cursor:pointer">
+          <input type="checkbox" id="precios-usados" checked style="width:auto" /> Sólo los que usa algún modelo
+        </label>
+      </div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Principio activo</th><th>Producto de referencia</th><th>Unidad</th><th class="num" style="width:120px">US$ / unidad</th><th class="num">Modelos</th></tr></thead>
+        <tbody id="precios-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══ RESULTADOS ══ -->
+  <div class="panel" id="panel-result">
+    <div class="tiles" id="tiles"></div>
+
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Costo por ha de cada cultivo</div>
+          <div class="block-sub" id="sub-cultivo"></div>
+        </div>
+      </div>
+      <div class="barras" id="ch-cultivo"></div>
+      <div class="tbl-scroll" style="margin-top:16px"><table>
+        <thead><tr><th>Cultivo</th><th class="num">ha</th><th class="num">Semillas</th><th class="num">Herbicidas</th><th class="num">Fungicidas</th><th class="num">Insecticidas</th><th class="num">Trat. semilla</th><th class="num">Coadyuv.</th><th class="num">US$/ha</th><th class="num">US$ total</th></tr></thead>
+        <tbody id="tb-cultivo"></tbody>
+      </table></div>
+    </div>
+
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Volumen de cada producto para la campaña</div>
+          <div class="block-sub" id="sub-volumen"></div>
+        </div>
+      </div>
+      <div id="ch-volumen"></div>
+    </div>
+
+    <div class="block">
+      <div class="block-header">
+        <div>
+          <div class="block-title">Costo por lote</div>
+          <div class="block-sub">Ordenado de mayor a menor</div>
+        </div>
+        <span class="spacer"></span>
+        <div class="chips" id="chips-lote-medida">
+          <button class="chip on" data-medida="total">US$ total</button>
+          <button class="chip" data-medida="ha">US$ por ha</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="exportar">Exportar CSV</button>
+      </div>
+      <div class="ley-serie" id="ley-lote"></div>
+      <div class="barras" id="ch-lote"></div>
+    </div>
+
+    <div class="hint">Semillas, herbicidas, fungicidas, insecticidas, tratamientos de semilla y coadyuvantes, con el manejo propio de cada lote donde lo haya. Fertilizantes, biológicos y labores todavía no están.
+      El US$/ha promedio divide por la superficie de los lotes: un lote con dos cultivos cuenta sus ha una sola vez.</div>
+    <div class="btn-row" style="margin-top:14px"><button class="btn btn-ghost btn-sm" id="reset">Volver a los datos del Excel</button></div>
+  </div>
+</div>
+
+<div id="modal" class="modal-back" style="display:none">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><div class="mt" id="modal-titulo"></div><div class="ms" id="modal-sub"></div></div>
+      <span class="spacer"></span>
+      <button class="modal-x" id="modal-x">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+<div id="tip"></div>
+<div id="toast"></div>
+<datalist id="lista-pa"></datalist>
+
+<script src="vendor/leaflet/leaflet.js?v=6"></script>
+<script src="usuario.js?v=6"></script>
+<script src="lotes-tarpuy.js?v=6" onerror="window.LOTES_FALTA=true"></script>
+<script src="presupuesto-tarpuy.js?v=6" onerror="window.PRESUPUESTO_FALTA=true"></script>
+<script src="presupuesto-calc.js?v=6"></script>
+<script src="nube.js?v=6"></script>
+<script>
+(function () {
+  "use strict";
+
+  const BASE = window.PRESUPUESTO_BASE || { meta: {}, lotes: [], modelos: {}, precios: {} };
+  const GEO = {};
+  (Array.isArray(window.LOTES) ? window.LOTES : []).forEach((l) => { GEO[l.id] = l; });
+  const KEY = "iag_presupuesto_v1";
+  const REGION = { NORTE: "Las Maravillas", RESTO: "Resto" };
+  const NOMBRE_CAMPO = { "Tarpuy-EM": "El Mistol", "Tarpuy-LI": "La Iluminada", "Tarpuy-BE": "Buenaesperanza",
+    "Tarpuy-SE": "Santa Escolástica", "Tarpuy-SF": "San Florián", "Tarpuy-ML": "Media Luna", "Tarpuy-EG": "El Guayacán" };
+  const FAMILIAS = ["Semilla", "Herbicida", "Fungicida", "Insecticida", "Tratamiento de semilla", "Coadyuvante"];
+  const FAM_PLURAL = { Semilla: "Semillas", Herbicida: "Herbicidas", Fungicida: "Fungicidas", Insecticida: "Insecticidas",
+    "Tratamiento de semilla": "Trat. de semilla", Coadyuvante: "Coadyuvantes" };
+
+  // Colores de cultivo para el mapa: los mismos de la recorrida, más los nuevos.
+  // Saturados, porque van sobre imagen satelital.
+  const COLOR_CULTIVO = {
+    "Soja": "#4ade80", "Maíz": "#fbbf24", "Maíz+brachiaria": "#f59e0b", "Mungo": "#a3e635",
+    "Chía": "#c084fc", "Trigo": "#fde68a", "Poroto": "#fda4af", "Cártamo": "#fb923c",
+    "Mijo perla": "#2dd4bf", "Sésamo": "#f472b6", "Vicia": "#60a5fa", "Garbanzo": "#d6d3d1",
+  };
+  const SIN_COLOR = "#64748b";
+  // Series de los gráficos (paleta categórica validada: azul, naranja)
+  const SERIE = { NORTE: "#2a78d6", RESTO: "#eb6834", una: "#2a78d6" };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const num = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+  const fmt = (n, d) => (n == null || isNaN(n)) ? "—"
+    : n.toLocaleString("es-AR", { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 });
+  const usd = (n) => "US$ " + fmt(n, 0);
+  const copia = (x) => JSON.parse(JSON.stringify(x));
+  const porNombre = (a, b) => a.nombre.localeCompare(b.nombre, "es", { numeric: true });
+
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+  // ── Estado ──────────────────────────────────────────────────────────────
+  let P = null;
+  function load() {
+    P = window.IAgPresupuesto.cargar();
+    let viejos = false;
+    P.lotes.forEach((l) => {
+      if (l.factor || l.ajustes) { migrarAjustes(l); viejos = true; }
+    });
+    if (viejos) save();
+  }
+
+  /**
+   * La primera versión ajustaba un lote con un % por familia y productos
+   * sueltos. Ahora cada lote puede tener su propia copia del modelo: lo viejo
+   * se convierte a esa copia para no perderlo.
+   */
+  function migrarAjustes(l) {
+    const factor = l.factor || {}, ajustes = l.ajustes || [];
+    const conFactor = Object.keys(factor).filter((f) => Math.abs(num(factor[f]) - 100) > 0.001);
+    if (conFactor.length) [l.c1, l.c2].filter(Boolean).forEach((c) => {
+      const k = claveModelo(c, l.region);
+      const lineas = l.modelos[c] || copia(k ? P.modelos[k] : []);
+      lineas.forEach((x) => { if (conFactor.indexOf(x.familia) !== -1) x.dosis = num(x.dosis) * num(factor[x.familia]) / 100; });
+      l.modelos[c] = lineas;
+    });
+    const extras = ajustes.filter((a) => a.pa);
+    if (extras.length && l.c1) {
+      const k = claveModelo(l.c1, l.region);
+      const lineas = l.modelos[l.c1] || copia(k ? P.modelos[k] : []);
+      extras.forEach((a) => lineas.push({ momento: "Ajuste del lote", familia: "Herbicida", categoria: "", pa: a.pa,
+        unidad: (P.precios[a.pa] || {}).unidad || "l", sup: 1, dosis: num(a.dosis), apl: 1, nota: a.nota || "" }));
+      l.modelos[l.c1] = lineas;
+    }
+    delete l.factor; delete l.ajustes;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { toast("No se pudo guardar en este navegador"); } }
+  const loteByUid = (u) => P.lotes.find((l) => l.uid === u);
+
+  // ── Cálculo ─────────────────────────────────────────────────────────────
+  const otra = (r) => (r === "NORTE" ? "RESTO" : "NORTE");
+  // El cálculo vive en presupuesto-calc.js (lo comparte la página del flujo)
+  const C = window.IAgPresupuesto;
+  const claveModelo = (cultivo, region) => C.claveModelo(P, cultivo, region);
+  const precioDe = (pa) => C.precioDe(P, pa);
+  const porHa = C.porHa;
+  const lineasDe = (l, c) => C.lineasDe(P, l, c);
+  const detalleLote = (l) => C.detalleLote(P, l);
+
+  function cultivosUsados() {
+    const s = new Set(Object.keys(COLOR_CULTIVO));
+    Object.keys(P.modelos).forEach((k) => s.add(k.split("|")[0]));
+    P.lotes.forEach((l) => { if (l.c1) s.add(l.c1); if (l.c2) s.add(l.c2); });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "es"));
+  }
+  const colorDe = (c) => COLOR_CULTIVO[c] || SIN_COLOR;
+
+  // ══════════════════════════════════════════════════════════════════════
+  // LOTES Y CULTIVOS
+  // ══════════════════════════════════════════════════════════════════════
+  let CICLO = "c1", CAMPO = "", LOTE_SEL = "";
+  const capa = {};
+  let mapa = null;
+
+  function iniciarMapa() {
+    if (!window.L || mapa) return;
+    mapa = L.map("mapa", { zoomControl: true });
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 18, attribution: "Imagen: Esri" }).addTo(mapa);
+    const pts = [];
+    P.lotes.forEach((l) => {
+      const g = GEO[l.id];
+      if (!g) return;
+      const anillos = g.anillos.map((a) => a.map((p) => [p[1], p[0]]));
+      anillos[0].forEach((p) => pts.push(p));
+      const poly = L.polygon(anillos, estilo(l)).addTo(mapa);
+      poly.bindTooltip(l.nombre, { permanent: true, direction: "center", className: "etiq-lote" });
+      poly.on("click", () => { CAMPO = l.campo; LOTE_SEL = l.uid; renderLista(); editarLote(l.uid); });
+      capa[l.uid] = poly;
+    });
+    // Los nombres sólo de cerca: con las dos zonas a la vista se amontonan
+    const etiquetas = () => $("mapa").classList.toggle("mapa-lejos", mapa.getZoom() < 12);
+    mapa.on("zoomend", etiquetas);
+    irARegion(MAPA_REG);
+    etiquetas();
+  }
+
+  /** Las dos zonas están a 300 km: el mapa muestra una por vez. */
+  let MAPA_REG = "NORTE";
+  function irARegion(reg) {
+    MAPA_REG = reg;
+    const pts = [];
+    P.lotes.filter((l) => l.region === reg && GEO[l.id]).forEach((l) => GEO[l.id].anillos[0].forEach((p) => pts.push([p[1], p[0]])));
+    if (mapa && pts.length) mapa.fitBounds(L.latLngBounds(pts), { padding: [20, 20] });
+    $("chips-mapa-reg").querySelectorAll("[data-mreg]").forEach((x) => x.classList.toggle("on", x.dataset.mreg === reg));
+  }
+  function estilo(l) {
+    const c = l[CICLO];
+    return { color: "#0f172a", weight: l.uid === LOTE_SEL ? 3 : 1.2, fillColor: c ? colorDe(c) : SIN_COLOR,
+             fillOpacity: c ? 0.62 : 0.15 };
+  }
+  function repintarMapa() { P.lotes.forEach((l) => { if (capa[l.uid]) capa[l.uid].setStyle(estilo(l)); }); }
+
+  function renderLeyenda() {
+    const ha = {};
+    P.lotes.forEach((l) => { const c = l[CICLO] || "Sin cultivo"; ha[c] = (ha[c] || 0) + num(l.ha); });
+    const orden = Object.keys(ha).sort((a, b) => ha[b] - ha[a]);
+    $("leyenda").innerHTML = `<div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${CICLO === "c1" ? "1º cultivo" : "2º cultivo"} · ha</div>` +
+      orden.map((c) => `<div class="it"><span class="sw" style="background:${c === "Sin cultivo" ? "#fff" : colorDe(c)}"></span>
+        <span class="nm">${esc(c)}</span><span class="ha">${fmt(ha[c], 0)}</span></div>`).join("");
+  }
+
+  function opcionesCultivo(sel, vacio) {
+    return (vacio ? `<option value="" ${sel ? "" : "selected"}>${vacio}</option>` : "") +
+      cultivosUsados().map((c) => `<option ${c === sel ? "selected" : ""}>${esc(c)}</option>`).join("") +
+      '<option value="__nuevo">＋ Otro cultivo…</option>';
+  }
+  function leerCultivo(sel, previo) {
+    if (sel.value !== "__nuevo") return sel.value;
+    const n = (prompt("Nombre del cultivo nuevo") || "").trim();
+    return n || previo || "";
+  }
+
+  function renderLista() {
+    const camposDe = (reg) => Array.from(new Set(P.lotes.filter((l) => l.region === reg).map((l) => l.campo || "")));
+    $("lista-campos").innerHTML = ["NORTE", "RESTO"].map((reg) => `<div class="region-t">${REGION[reg]}</div>
+      <div class="campos">${camposDe(reg).map((c) => {
+        const ls = P.lotes.filter((l) => l.campo === c && l.region === reg);
+        const ha = ls.reduce((s, l) => s + num(l.ha), 0);
+        const cult = {};
+        ls.forEach((l) => { if (l.c1) cult[l.c1] = (cult[l.c1] || 0) + num(l.ha); });
+        const top = Object.keys(cult).sort((a, b) => cult[b] - cult[a]).slice(0, 3);
+        return `<button class="campo ${c && c === CAMPO ? "on" : ""}" data-campo="${esc(c)}">
+          <span class="n">${esc(NOMBRE_CAMPO[c] || c || "Sin mapa")}</span>
+          <span class="m">${ls.length} lotes · ${fmt(ha, 0)} ha</span>
+          <span class="c">${top.map((x) => `<span class="pt" style="background:${colorDe(x)}"></span>${esc(x)}`).join(" ")}</span>
+        </button>`;
+      }).join("")}</div>`).join("");
+    $("lista-campos").querySelectorAll("[data-campo]").forEach((b) => b.addEventListener("click", () => {
+      CAMPO = CAMPO === b.dataset.campo ? "" : b.dataset.campo;
+      renderLista();
+      // En el mapa, ir al campo elegido
+      if (mapa && CAMPO) {
+        const pts = [];
+        P.lotes.filter((l) => l.campo === CAMPO && GEO[l.id]).forEach((l) => GEO[l.id].anillos[0].forEach((p) => pts.push([p[1], p[0]])));
+        if (pts.length) mapa.fitBounds(L.latLngBounds(pts), { padding: [20, 20] });
+        const l0 = P.lotes.find((l) => l.campo === CAMPO);
+        if (l0) $("chips-mapa-reg").querySelectorAll("[data-mreg]").forEach((x) => x.classList.toggle("on", x.dataset.mreg === l0.region));
+      }
+    }));
+
+    if (!CAMPO) { $("lista-lotes").innerHTML = '<div class="hint" style="margin-top:12px">Tocá un campo para ver y editar sus lotes.</div>'; return; }
+    const ls = P.lotes.filter((l) => l.campo === CAMPO).sort(porNombre);
+    $("lista-lotes").innerHTML = `
+      <div class="masivo">
+        <div><label class="fl">A todos los lotes de ${esc(NOMBRE_CAMPO[CAMPO] || CAMPO)}</label>
+          <select id="m-cultivo">${opcionesCultivo("", "— sin cultivo —")}</select></div>
+        <div><label class="fl">como</label><select id="m-ciclo"><option value="c1">1º cultivo</option><option value="c2">2º cultivo</option></select></div>
+        <button class="btn btn-ghost btn-sm" id="m-aplicar">Aplicar</button>
+      </div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Lote</th><th class="num" style="width:90px">ha</th><th style="width:170px">1º cultivo</th><th style="width:170px">2º cultivo</th>
+          <th class="num">US$/ha</th><th class="num">US$ total</th><th></th></tr></thead>
+        <tbody>${ls.map((l) => {
+          const d = detalleLote(l);
+          const propios = [l.c1, l.c2].filter((c) => c && l.modelos[c]);
+          const sinModelo = [l.c1, l.c2].filter(Boolean).some((c) => !lineasDe(l, c).length);
+          return `<tr class="${l.uid === LOTE_SEL ? "sel" : ""}" data-fila="${l.uid}">
+            <td><strong>${esc(l.nombre)}</strong>${l.anterior ? `<div style="font-size:11px;color:#94a3b8">25-26: ${esc(l.anterior)}</div>` : ""}</td>
+            <td class="num"><input type="number" min="0" step="0.1" value="${l.ha}" data-ha="${l.uid}" style="text-align:right" /></td>
+            <td><select data-c1="${l.uid}">${opcionesCultivo(l.c1, "—")}</select></td>
+            <td><select data-c2="${l.uid}">${opcionesCultivo(l.c2, "—")}</select></td>
+            <td class="num">${fmt(d.porHa, 0)}${sinModelo ? ' <span class="badge b-amber" title="Algún cultivo no tiene modelo cargado">sin modelo</span>' : ""}</td>
+            <td class="num"><strong>${fmt(d.costo, 0)}</strong></td>
+            <td style="white-space:nowrap"><button class="link" data-editar="${l.uid}">Manejo</button>${propios.length
+              ? ` <span class="badge b-purple" title="Manejo propio de ${esc(propios.join(" y "))}">propio</span>` : ""}</td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table></div>`;
+
+    const cambio = () => { save(); renderLista(); repintarMapa(); renderLeyenda(); };
+    $("lista-lotes").querySelectorAll("[data-ha]").forEach((i) => i.addEventListener("change", () => { loteByUid(i.dataset.ha).ha = num(i.value); cambio(); }));
+    ["c1", "c2"].forEach((k) => $("lista-lotes").querySelectorAll("[data-" + k + "]").forEach((s) => s.addEventListener("change", () => {
+      const l = loteByUid(s.dataset[k]); l[k] = leerCultivo(s, l[k]); asegurarModelo(l[k], l.region); cambio();
+    })));
+    $("lista-lotes").querySelectorAll("[data-editar]").forEach((b) => b.addEventListener("click", () => editarLote(b.dataset.editar)));
+    $("m-aplicar").addEventListener("click", () => {
+      const c = leerCultivo($("m-cultivo"), ""), k = $("m-ciclo").value;
+      ls.forEach((l) => { l[k] = c; asegurarModelo(c, l.region); });
+      cambio(); toast(ls.length + " lotes → " + (c || "sin cultivo"));
+    });
+  }
+
+  /** Un cultivo nuevo necesita un modelo, aunque sea vacío, para poder cargarlo. */
+  function asegurarModelo(c, region) {
+    if (c && !claveModelo(c, region)) P.modelos[c + "|" + region] = [];
+  }
+
+  function abrirModal(t, s, html) {
+    $("modal-titulo").textContent = t; $("modal-sub").textContent = s || "";
+    $("modal-body").innerHTML = html; $("modal").style.display = "flex";
+  }
+  function cerrarModal() { $("modal").style.display = "none"; }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // TABLA DE LÍNEAS DE UN MODELO (la usan el modelo general y el de cada lote)
+  // ══════════════════════════════════════════════════════════════════════
+  const mismaLinea = (a, b) => a.momento === b.momento && a.pa === b.pa;
+  const igualValor = (a, b) => Math.abs(num(a.sup) - num(b.sup)) < 1e-6 && Math.abs(num(a.dosis) - num(b.dosis)) < 1e-6 &&
+    Math.abs((num(a.apl) || 1) - (num(b.apl) || 1)) < 1e-6 && a.familia === b.familia;
+
+  /**
+   * Filas editables de un modelo, agrupadas por momento. Con `ref` (el modelo
+   * general) se marca lo que el lote cambió o agregó.
+   */
+  function htmlLineas(lineas, ref) {
+    const momentos = [];
+    lineas.forEach((x) => { if (momentos.indexOf(x.momento) === -1) momentos.push(x.momento); });
+    const marca = (x) => {
+      if (!ref) return "";
+      const g = ref.find((y) => mismaLinea(x, y));
+      return !g ? ' <span class="badge b-purple">agregado</span>' : igualValor(x, g) ? "" : ' <span class="badge b-amber">editado</span>';
+    };
+    const quitadas = ref ? ref.filter((g) => !lineas.some((x) => mismaLinea(x, g))) : [];
+    return `<div class="tbl-scroll"><table>
+      <thead><tr><th>Familia</th><th>Principio activo</th><th>Unidad</th><th class="num" style="width:80px">% sup</th><th class="num" style="width:80px">Dosis</th>
+        <th class="num" style="width:70px">Apl</th><th class="num">Por ha</th><th class="num">US$/ha</th><th></th></tr></thead>
+      <tbody>${momentos.map((m) => `<tr class="momento"><td colspan="9">${esc(m || "Sin momento")}</td></tr>` +
+        lineas.map((x, i) => x.momento !== m ? "" : `<tr>
+          <td><select data-fam="${i}">${FAMILIAS.map((f) => `<option ${f === x.familia ? "selected" : ""}>${f}</option>`).join("")}</select></td>
+          <td><input type="text" list="lista-pa" value="${esc(x.pa)}" data-pa="${i}" />${P.precios[x.pa] ? "" : ' <span class="badge b-red">sin precio</span>'}${marca(x)}</td>
+          <td><input type="text" value="${esc(x.unidad)}" data-uni="${i}" style="width:48px" /></td>
+          <td class="num"><input type="number" min="0" max="100" step="1" value="${Math.round(num(x.sup) * 1000) / 10}" data-sup="${i}" style="text-align:right" /></td>
+          <td class="num"><input type="number" min="0" step="0.01" value="${x.dosis}" data-dosis="${i}" style="text-align:right" /></td>
+          <td class="num"><input type="number" min="0" step="0.1" value="${x.apl}" data-apl="${i}" style="text-align:right" /></td>
+          <td class="num">${fmt(porHa(x), 3)} ${esc(x.unidad)}</td>
+          <td class="num"><strong>${fmt(porHa(x) * precioDe(x.pa), 1)}</strong></td>
+          <td><button class="link del" data-quitar="${i}">✕</button></td>
+        </tr>`).join("")).join("") || '<tr><td colspan="9" class="empty" style="padding:12px">Sin productos.</td></tr>'}</tbody>
+    </table></div>
+    ${quitadas.length ? `<div class="hint">Quitados para este lote: ${quitadas.map((g) => esc(g.pa)).join(", ")}</div>` : ""}
+    <div class="masivo">
+      <div style="min-width:220px"><label class="fl">Agregar producto en el momento</label>
+        <select data-mo-momento>${(momentos.length ? momentos : ["Siembra"]).map((m) => `<option>${esc(m)}</option>`).join("")}
+          <option value="__nuevo">＋ Otro momento…</option></select></div>
+      <button class="btn btn-ghost btn-sm" data-mo-agregar>＋ Agregar</button>
+    </div>
+    ${htmlTotales(lineas)}`;
+  }
+
+  function htmlTotales(lineas, titulo) {
+    const totFam = {};
+    lineas.forEach((x) => { totFam[x.familia] = (totFam[x.familia] || 0) + porHa(x) * precioDe(x.pa); });
+    const total = Object.values(totFam).reduce((a, b) => a + b, 0);
+    return `<div class="tot-fam">${FAMILIAS.filter((f) => totFam[f]).map((f) => `<div>${FAM_PLURAL[f]}<br><b>${fmt(totFam[f], 1)}</b> US$/ha</div>`).join("")}
+      <div style="background:#f5f3ff">${titulo ? esc(titulo) : "Total"}<br><b>${fmt(total, 1)}</b> US$/ha</div></div>`;
+  }
+
+  /** Engancha los campos de htmlLineas: cada cambio llama a `cambio`. */
+  function bindLineas(cont, lineas, cambio) {
+    const campo = (attr, prop, f) => cont.querySelectorAll("[data-" + attr + "]").forEach((i) => i.addEventListener("change", () => {
+      lineas[+i.dataset[attr]][prop] = f ? f(i.value) : i.value; cambio();
+    }));
+    campo("fam", "familia"); campo("pa", "pa", (v) => v.trim()); campo("uni", "unidad");
+    campo("sup", "sup", (v) => num(v) / 100); campo("dosis", "dosis", num); campo("apl", "apl", num);
+    cont.querySelectorAll("[data-quitar]").forEach((b) => b.addEventListener("click", () => { lineas.splice(+b.dataset.quitar, 1); cambio(); }));
+    const agregar = cont.querySelector("[data-mo-agregar]");
+    if (agregar) agregar.addEventListener("click", () => {
+      let m = cont.querySelector("[data-mo-momento]").value;
+      if (m === "__nuevo") m = (prompt("Nombre del momento (ej. Post tardío)") || "").trim();
+      if (!m) return;
+      // Se inserta al final de su momento, para que quede agrupado
+      let pos = -1;
+      lineas.forEach((x, i) => { if (x.momento === m) pos = i; });
+      const nueva = { momento: m, familia: "Herbicida", categoria: "", pa: "", unidad: "l", sup: 1, dosis: 0, apl: 1 };
+      if (pos === -1) lineas.push(nueva); else lineas.splice(pos + 1, 0, nueva);
+      cambio();
+    });
+  }
+
+  /**
+   * Ficha de un lote. El modelo es general; si un lote tiene algo particular
+   * (una maleza difícil, otra fecha de siembra) se le hace su propia copia del
+   * modelo de ese cultivo y se edita ahí, sin tocar el general.
+   */
+  function editarLote(uid) {
+    const l = loteByUid(uid);
+    if (!l) return;
+    LOTE_SEL = uid; repintarMapa();
+    const pintar = () => {
+      const scroll = $("modal").style.display === "flex" ? $("modal-body").scrollTop : 0;
+      const d = detalleLote(l);
+      const cultivos = [l.c1, l.c2].filter(Boolean);
+      abrirModal("Lote " + l.nombre, (NOMBRE_CAMPO[l.campo] || "") + " · " + REGION[l.region] + " · " + fmt(num(l.ha), 1) + " ha",
+        `<div class="g3">
+          <div><label class="fl">Superficie (ha)</label><input type="number" id="e-ha" min="0" step="0.1" value="${l.ha}" /></div>
+          <div><label class="fl">1º cultivo</label><select id="e-c1">${opcionesCultivo(l.c1, "—")}</select></div>
+          <div><label class="fl">2º cultivo</label><select id="e-c2">${opcionesCultivo(l.c2, "—")}</select></div>
+        </div>
+        ${cultivos.map((c) => {
+          const k = claveModelo(c, l.region);
+          const general = k ? P.modelos[k] : [];
+          const propio = l.modelos[c];
+          return `<div class="lote-modelo" data-cult="${esc(c)}">
+            <div class="lote-modelo-cab">
+              <div><strong>Manejo de ${esc(c)}</strong>
+                ${propio ? '<span class="badge b-purple">propio de este lote</span>'
+                  : `<div class="hint" style="margin-top:2px">Usa el modelo general de ${esc(c)} · ${REGION[(k || "|" + l.region).split("|")[1]] || ""}${general.length ? "" : " (vacío)"}</div>`}</div>
+              <span class="spacer"></span>
+              <label style="font-size:12px;color:#475569;display:flex;align-items:center;gap:6px">Siembra
+                <input type="date" data-siembra="${esc(c)}" value="${esc(C.fechaSiembra(P, l, c))}" style="width:auto;padding:4px 6px;font-size:12.5px;${l.siembra[c] ? "border-color:#7c3aed" : ""}" /></label>
+              ${l.siembra[c] ? `<button class="link" data-siembra-gral="${esc(c)}" title="Volver a la fecha del cultivo en la región">general</button>` : ""}
+              ${propio ? `<button class="btn btn-ghost btn-sm" data-general="${esc(c)}">Volver al modelo general</button>`
+                       : `<button class="btn btn-primary btn-sm" data-propio="${esc(c)}">Editar para este lote</button>`}
+            </div>
+            ${propio ? htmlLineas(propio, general) : htmlTotales(general, c + " · modelo general")}
+          </div>`;
+        }).join("") || '<div class="hint" style="margin-top:14px">Elegí un cultivo para ver su manejo.</div>'}
+        <div class="tot-fam" style="margin-top:16px"><div style="background:#f5f3ff">Total lote<br><b>${usd(d.costo)}</b> · ${fmt(d.porHa, 0)} US$/ha</div></div>`);
+      $("modal-body").scrollTop = scroll;
+
+      const listo = () => { save(); pintar(); renderLista(); repintarMapa(); renderLeyenda(); };
+      $("e-ha").addEventListener("change", () => { l.ha = num($("e-ha").value); listo(); });
+      ["c1", "c2"].forEach((k) => $("e-" + k).addEventListener("change", () => { l[k] = leerCultivo($("e-" + k), l[k]); asegurarModelo(l[k], l.region); listo(); }));
+      $("modal-body").querySelectorAll("[data-propio]").forEach((b) => b.addEventListener("click", () => {
+        const c = b.dataset.propio, k = claveModelo(c, l.region);
+        l.modelos[c] = copia(k ? P.modelos[k] : []);
+        listo();
+      }));
+      $("modal-body").querySelectorAll("[data-general]").forEach((b) => b.addEventListener("click", () => {
+        if (!confirm("Se pierden los cambios de este lote y vuelve a usar el modelo general. ¿Seguir?")) return;
+        delete l.modelos[b.dataset.general];
+        listo();
+      }));
+      $("modal-body").querySelectorAll("[data-siembra]").forEach((i) => i.addEventListener("change", () => {
+        if (i.value) l.siembra[i.dataset.siembra] = i.value; else delete l.siembra[i.dataset.siembra];
+        listo();
+      }));
+      $("modal-body").querySelectorAll("[data-siembra-gral]").forEach((b) => b.addEventListener("click", () => {
+        delete l.siembra[b.dataset.siembraGral]; listo();
+      }));
+      $("modal-body").querySelectorAll(".lote-modelo").forEach((sec) => {
+        const c = sec.dataset.cult;
+        if (l.modelos[c]) bindLineas(sec, l.modelos[c], listo);
+      });
+    };
+    pintar();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // MODELOS
+  // ══════════════════════════════════════════════════════════════════════
+  let MODELO = "";
+  // Modelos generales editados en esta sesión con lotes que tienen su propia
+  // versión: hay que preguntar si se pisan
+  const PREGUNTAR = {};
+
+  /** Lotes con su propia versión del modelo `k` ("Soja|NORTE"). */
+  function lotesConPropio(k) {
+    const c = k.split("|")[0];
+    return P.lotes.filter((l) => l.modelos[c] && claveModelo(c, l.region) === k && (l.c1 === c || l.c2 === c));
+  }
+
+  function renderModelos() {
+    const claves = Object.keys(P.modelos).sort((a, b) => a.localeCompare(b, "es"));
+    if (!MODELO || !P.modelos[MODELO]) MODELO = claves[0] || "";
+    // Superficie que usa cada modelo, para saber qué pesa más
+    const haDe = {};
+    P.lotes.forEach((l) => [l.c1, l.c2].filter(Boolean).forEach((c) => {
+      const k = claveModelo(c, l.region); if (k) haDe[k] = (haDe[k] || 0) + num(l.ha);
+    }));
+    $("chips-modelos").innerHTML = claves.map((k) => {
+      const [c, r] = k.split("|");
+      return `<button class="chip ${k === MODELO ? "on" : ""}" data-modelo="${esc(k)}">${esc(c)} · ${REGION[r] || r}
+        <span style="font-weight:400;opacity:.8">${haDe[k] ? fmt(haDe[k], 0) + " ha" : "sin lotes"}</span>${P.modelos[k].length ? "" : " ⚠"}</button>`;
+    }).join("");
+    $("chips-modelos").querySelectorAll("[data-modelo]").forEach((b) => b.addEventListener("click", () => { MODELO = b.dataset.modelo; renderModelos(); }));
+    if (!MODELO) { $("modelo").innerHTML = '<div class="empty">No hay modelos.</div>'; return; }
+
+    const lineas = P.modelos[MODELO];
+    const [cult, reg] = MODELO.split("|");
+    const propios = lotesConPropio(MODELO);
+    const nombres = propios.map((l) => l.nombre).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+
+    const sm = P.siembra[MODELO] || {};
+    $("modelo").innerHTML = `
+      <div class="masivo" style="margin-top:0">
+        <div><label class="fl">Fecha de siembra · ${esc(cult)} en ${REGION[reg]}</label>
+          <input type="date" id="mo-siembra" value="${esc(sm.fecha || "")}" /></div>
+        <div class="hint" style="margin:0 0 6px">${sm.origen ? esc(sm.origen) : "sin fecha"}${/supuesta/.test(sm.origen || "") ? ' <span class="badge b-amber">revisar</span>' : ""}<br>
+          Ubica en el calendario cada momento del modelo: es lo que usan las alertas de compra.</div>
+      </div>
+      ${PREGUNTAR[MODELO] && propios.length ? `<div class="pisar">
+          <div>Cambiaste el modelo general. <strong>${propios.length} lote(s)</strong> tienen su propia versión de ${esc(cult)}:
+            ${esc(nombres.join(", "))}. ¿Les aplicás el modelo general?</div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn btn-primary btn-sm" id="mo-pisar">Pisar sus ediciones con el general</button>
+            <button class="btn btn-ghost btn-sm" id="mo-mantener">Mantener las de cada lote</button>
+          </div>
+        </div>`
+        : propios.length ? `<div class="hint" style="margin:0 0 10px">Con versión propia: ${esc(nombres.join(", "))}. Esos lotes no cambian con este modelo.</div>` : ""}
+      ${lineas.length ? "" : `<div class="note">${esc(cult)} no tiene historia en 25-26: el modelo está vacío. Cargalo a mano o copialo de otro.</div>`}
+      <div class="masivo" style="margin-top:0">
+        <div style="min-width:220px"><label class="fl">Copiar todo de otro modelo</label>
+          <select id="mo-copiar"><option value="">—</option>${Object.keys(P.modelos).filter((k) => k !== MODELO && P.modelos[k].length)
+            .map((k) => `<option value="${esc(k)}">${esc(k.split("|")[0])} · ${REGION[k.split("|")[1]]}</option>`).join("")}</select></div>
+        <button class="btn btn-ghost btn-sm" id="mo-copiar-ok">Copiar</button>
+      </div>
+      ${htmlLineas(lineas)}`;
+
+    const cambio = () => { PREGUNTAR[MODELO] = true; save(); renderModelos(); };
+    $("mo-siembra").addEventListener("change", () => {
+      P.siembra[MODELO] = { fecha: $("mo-siembra").value, origen: "editada" };
+      save(); renderModelos();
+    });
+    bindLineas($("modelo"), lineas, cambio);
+    $("mo-copiar-ok").addEventListener("click", () => {
+      const k = $("mo-copiar").value;
+      if (!k) return;
+      if (lineas.length && !confirm("Se reemplazan las " + lineas.length + " líneas de este modelo. ¿Seguir?")) return;
+      P.modelos[MODELO] = copia(P.modelos[k]);
+      cambio(); toast("Copiado de " + k.replace("|", " · "));
+    });
+    if ($("mo-pisar")) $("mo-pisar").addEventListener("click", () => {
+      propios.forEach((l) => { delete l.modelos[cult]; });
+      delete PREGUNTAR[MODELO];
+      save(); renderModelos(); renderLista();
+      toast(propios.length + " lote(s) vuelven a usar el modelo general");
+    });
+    if ($("mo-mantener")) $("mo-mantener").addEventListener("click", () => {
+      delete PREGUNTAR[MODELO];
+      renderModelos();
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // PRECIOS
+  // ══════════════════════════════════════════════════════════════════════
+  function renderPrecios() {
+    const usos = {};
+    Object.keys(P.modelos).forEach((k) => P.modelos[k].forEach((x) => { (usos[x.pa] = usos[x.pa] || new Set()).add(k); }));
+    P.lotes.forEach((l) => Object.keys(l.modelos).forEach((c) => l.modelos[c].forEach((x) => {
+      if (x.pa) (usos[x.pa] = usos[x.pa] || new Set()).add("lote " + l.nombre + " · " + c);
+    })));
+    // Lo usado sin precio va primero y en rojo: es lo que falta resolver
+    Object.keys(usos).forEach((pa) => { if (pa && !P.precios[pa]) P.precios[pa] = { precio: 0, unidad: "", producto: "", nuevo: true }; });
+    const solo = $("precios-usados").checked;
+    const filas = Object.keys(P.precios).filter((pa) => !solo || usos[pa])
+      .sort((a, b) => ((precioDe(a) > 0) - (precioDe(b) > 0)) || a.localeCompare(b, "es"));
+    $("precios-body").innerHTML = filas.map((pa) => {
+      const p = P.precios[pa], falta = !(num(p.precio) > 0);
+      return `<tr style="${falta ? "background:#fff1f2" : ""}">
+        <td><strong>${esc(pa)}</strong>${falta ? ' <span class="badge b-red">sin precio</span>' : ""}</td>
+        <td style="color:#64748b;font-size:12px">${esc(p.producto || "—")}${p.marcas && p.marcas.length > 1 ? `<div style="color:#94a3b8;font-size:11px">${p.marcas.length} marcas</div>` : ""}</td>
+        <td><input type="text" value="${esc(p.unidad || "")}" data-puni="${esc(pa)}" style="width:52px" /></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="${p.precio}" data-precio="${esc(pa)}" style="text-align:right" /></td>
+        <td class="num" style="color:#64748b">${usos[pa] ? usos[pa].size : "—"}</td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="5" class="empty">Sin precios.</td></tr>';
+    $("precios-body").querySelectorAll("[data-precio]").forEach((i) => i.addEventListener("change", () => {
+      P.precios[i.dataset.precio].precio = num(i.value); save(); renderPrecios();
+    }));
+    $("precios-body").querySelectorAll("[data-puni]").forEach((i) => i.addEventListener("change", () => {
+      P.precios[i.dataset.puni].unidad = i.value.trim(); save();
+    }));
+    $("lista-pa").innerHTML = Object.keys(P.precios).sort().map((pa) => `<option value="${esc(pa)}">`).join("");
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RESULTADOS
+  // ══════════════════════════════════════════════════════════════════════
+  let FILTRO = "", MEDIDA = "total";
+
+  function resumen(lotes) {
+    let costo = 0, ha = 0;
+    lotes.forEach((l) => { costo += detalleLote(l).costo; ha += num(l.ha); });
+    return { costo, ha, porHa: ha ? costo / ha : 0, n: lotes.length };
+  }
+
+  function tip(el, html) {
+    el.addEventListener("mousemove", (e) => {
+      const t = $("tip"); t.innerHTML = html; t.style.opacity = 1;
+      t.style.left = Math.min(e.clientX + 14, window.innerWidth - 270) + "px"; t.style.top = (e.clientY + 14) + "px";
+    });
+    el.addEventListener("mouseleave", () => { $("tip").style.opacity = 0; });
+  }
+
+  /** Barras horizontales. filas: [{et, v, color, val, tip}] */
+  function barras(cont, filas) {
+    const max = Math.max(...filas.map((f) => f.v), 0) || 1;
+    cont.innerHTML = filas.map((f, i) => `<div class="et" title="${esc(f.et)}">${esc(f.et)}</div>
+      <div class="pista" data-i="${i}"><div class="barra" style="width:calc(${(f.v / max) * 100}% - 90px);background:${f.color}"></div><span class="val">${f.val}</span></div>`).join("");
+    cont.querySelectorAll(".pista").forEach((p) => { const f = filas[+p.dataset.i]; if (f.tip) tip(p, f.tip); });
+  }
+
+  function renderResultados() {
+    const todos = P.lotes;
+    const vis = FILTRO ? todos.filter((l) => l.region === FILTRO) : todos;
+    const tiles = [["", "Todo"], ["NORTE", REGION.NORTE], ["RESTO", REGION.RESTO]];
+    $("tiles").innerHTML = tiles.map(([r, t]) => {
+      const s = resumen(r ? todos.filter((l) => l.region === r) : todos);
+      return `<div class="tile ${r === FILTRO ? "on" : ""}" data-filtro="${r}">
+        <div class="t">${t}</div><div class="v">${usd(s.costo)}</div>
+        <div class="s">${fmt(s.porHa, 1)} US$/ha · ${fmt(s.ha, 0)} ha · ${s.n} lotes</div></div>`;
+    }).join("");
+    $("tiles").querySelectorAll("[data-filtro]").forEach((b) => b.addEventListener("click", () => { FILTRO = b.dataset.filtro; renderResultados(); }));
+    const nombreFiltro = FILTRO ? REGION[FILTRO] : "todos los campos";
+
+    // Por cultivo: cada cultivo con sus ha sembradas (un doble cultivo suma en los dos)
+    const porCult = {};
+    vis.forEach((l) => {
+      const d = detalleLote(l);
+      [l.c1, l.c2].filter(Boolean).forEach((c) => {
+        const x = porCult[c] = porCult[c] || { ha: 0, fam: {}, total: 0 };
+        x.ha += num(l.ha);
+      });
+      d.items.forEach((it) => {
+        const c = it.cultivo || l.c1 || "Sin cultivo";
+        const x = porCult[c] = porCult[c] || { ha: 0, fam: {}, total: 0 };
+        x.fam[it.familia] = (x.fam[it.familia] || 0) + it.costo;
+        x.total += it.costo;
+      });
+    });
+    const cults = Object.keys(porCult).sort((a, b) => (porCult[b].total / (porCult[b].ha || 1)) - (porCult[a].total / (porCult[a].ha || 1)));
+    $("sub-cultivo").textContent = "US$ por ha sembrada · " + nombreFiltro;
+    barras($("ch-cultivo"), cults.map((c) => {
+      const x = porCult[c], v = x.ha ? x.total / x.ha : 0;
+      return { et: c, v, color: SERIE.una, val: x.total ? fmt(v, 0) + " US$/ha" : "sin modelo cargado",
+        tip: `<b>${esc(c)}</b><br>${fmt(x.ha, 0)} ha · ${usd(x.total)}<br>${FAMILIAS.filter((f) => x.fam[f]).map((f) => FAM_PLURAL[f] + ": " + fmt(x.fam[f] / (x.ha || 1), 1) + " US$/ha").join("<br>")}` };
+    }));
+    const cel = (x, f) => `<td class="num">${x.fam[f] ? fmt(x.fam[f] / (x.ha || 1), 1) : "—"}</td>`;
+    $("tb-cultivo").innerHTML = cults.map((c) => {
+      const x = porCult[c];
+      return `<tr><td><span class="pt" style="background:${colorDe(c)}"></span><strong>${esc(c)}</strong></td><td class="num">${fmt(x.ha, 0)}</td>
+        ${FAMILIAS.map((f) => cel(x, f)).join("")}
+        <td class="num"><strong>${fmt(x.ha ? x.total / x.ha : 0, 1)}</strong></td><td class="num">${fmt(x.total, 0)}</td></tr>`;
+    }).join("");
+
+    // Volumen por producto, por familia
+    const vol = {};
+    vis.forEach((l) => detalleLote(l).items.forEach((it) => {
+      if (!it.pa) return;
+      const fam = it.familia;
+      const k = fam + "|" + it.pa;
+      const x = vol[k] = vol[k] || { fam, pa: it.pa, unidad: it.unidad, cant: 0, costo: 0 };
+      x.cant += it.cant; x.costo += it.costo;
+    }));
+    const fams = FAMILIAS.filter((f) => Object.values(vol).some((x) => x.fam === f));
+    $("sub-volumen").textContent = "Litros o kilos de producto formulado · " + nombreFiltro + " · cada familia con su escala";
+    $("ch-volumen").innerHTML = fams.map((f, i) => `<div class="fam-t">${FAM_PLURAL[f] || f}</div><div class="barras" id="vol-${i}"></div>`).join("");
+    fams.forEach((f, i) => {
+      const lista = Object.values(vol).filter((x) => x.fam === f).sort((a, b) => b.cant - a.cant);
+      barras($("vol-" + i), lista.map((x) => ({ et: x.pa, v: x.cant, color: SERIE.una,
+        val: fmt(x.cant, 0) + " " + esc(x.unidad),
+        tip: `<b>${esc(x.pa)}</b><br>${fmt(x.cant, 1)} ${esc(x.unidad)} · ${usd(x.costo)}<br>${fmt(precioDe(x.pa), 2)} US$/${esc(x.unidad)}` })));
+    });
+
+    // Costo por lote
+    const regiones = FILTRO ? [FILTRO] : ["NORTE", "RESTO"];
+    $("ley-lote").innerHTML = regiones.length > 1
+      ? regiones.map((r) => `<span><i style="background:${SERIE[r]}"></i>${REGION[r]}</span>`).join("") : "";
+    const filas = vis.map((l) => ({ l, d: detalleLote(l) }))
+      .sort((a, b) => MEDIDA === "ha" ? b.d.porHa - a.d.porHa : b.d.costo - a.d.costo);
+    barras($("ch-lote"), filas.map(({ l, d }) => ({
+      et: l.nombre + " · " + [l.c1, l.c2].filter(Boolean).join(" / "),
+      v: MEDIDA === "ha" ? d.porHa : d.costo,
+      color: regiones.length > 1 ? SERIE[l.region] : SERIE.una,
+      val: MEDIDA === "ha" ? fmt(d.porHa, 0) + " US$/ha" : fmt(d.costo, 0),
+      tip: `<b>${esc(l.nombre)}</b> · ${esc(NOMBRE_CAMPO[l.campo] || "")}<br>${esc([l.c1, l.c2].filter(Boolean).join(" / ") || "sin cultivo")}<br>${fmt(num(l.ha), 1)} ha · ${usd(d.costo)} · ${fmt(d.porHa, 0)} US$/ha`,
+    })));
+  }
+
+  /**
+   * CSV para el Excel en castellano: separado por punto y coma y con coma
+   * decimal, para que se abra bien con doble clic. El BOM hace que respete
+   * los acentos.
+   */
+  function descargarCSV(nombre, filas) {
+    const cel = (v) => {
+      if (typeof v === "number") return isNaN(v) ? "" : String(Math.round(v * 100) / 100).replace(".", ",");
+      const s = String(v ?? "");
+      return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const blob = new Blob(["\ufeff" + filas.map((f) => f.map(cel).join(";")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+  }
+
+  /** Detalle de insumos por lote (lo que mostraba "Exportar CSV"). */
+  function exportarCSV() {
+    const filas = [["Región", "Campo", "Lote", "ha", "1º cultivo", "2º cultivo", "Familia", "Principio activo", "Cantidad", "Unidad", "US$"]];
+    P.lotes.forEach((l) => detalleLote(l).items.forEach((it) => filas.push([REGION[l.region], NOMBRE_CAMPO[l.campo] || l.campo, l.nombre, num(l.ha),
+      l.c1, l.c2, it.familia, it.pa, it.cant, it.unidad, it.costo])));
+    descargarCSV("presupuesto-2026-27-insumos.csv", filas);
+  }
+
+  /**
+   * La planificación: qué va en cada lote, con su costo, y debajo el resumen
+   * por cultivo y por región.
+   */
+  function exportarPlanificacion() {
+    const filas = [["Planificación 2026-27 · Tarpuy"], [],
+      ["Región", "Campo", "Lote", "ha", "1º cultivo", "2º cultivo", "Manejo", "US$/ha", "US$ total"]];
+    const orden = P.lotes.slice().sort((a, b) => (a.region + (NOMBRE_CAMPO[a.campo] || "")).localeCompare(b.region + (NOMBRE_CAMPO[b.campo] || "")) ||
+      a.nombre.localeCompare(b.nombre, "es", { numeric: true }));
+    orden.forEach((l) => {
+      const d = detalleLote(l);
+      const propio = [l.c1, l.c2].filter((c) => c && l.modelos[c]);
+      filas.push([REGION[l.region], NOMBRE_CAMPO[l.campo] || l.campo, l.nombre, num(l.ha), l.c1 || "", l.c2 || "",
+        propio.length ? "propio (" + propio.join(", ") + ")" : "modelo general", d.porHa, d.costo]);
+    });
+    filas.push([], ["Resumen por cultivo"], ["Cultivo", "ha " + REGION.NORTE, "ha " + REGION.RESTO, "ha total", "US$ total", "US$/ha"]);
+    const cult = {};
+    P.lotes.forEach((l) => {
+      const d = detalleLote(l);
+      [l.c1, l.c2].filter(Boolean).forEach((c) => {
+        const x = cult[c] = cult[c] || { NORTE: 0, RESTO: 0, costo: 0 };
+        x[l.region] += num(l.ha);
+      });
+      d.items.forEach((it) => { if (cult[it.cultivo]) cult[it.cultivo].costo += it.costo; });
+    });
+    Object.keys(cult).sort((a, b) => (cult[b].NORTE + cult[b].RESTO) - (cult[a].NORTE + cult[a].RESTO)).forEach((c) => {
+      const x = cult[c], ha = x.NORTE + x.RESTO;
+      filas.push([c, x.NORTE, x.RESTO, ha, x.costo, ha ? x.costo / ha : 0]);
+    });
+    filas.push([], ["Totales", "Lotes", "ha", "US$ total", "US$/ha"]);
+    [["NORTE", REGION.NORTE], ["RESTO", REGION.RESTO], ["", "Todo"]].forEach(([r, t]) => {
+      const s = resumen(r ? P.lotes.filter((l) => l.region === r) : P.lotes);
+      filas.push([t, s.n, s.ha, s.costo, s.porHa]);
+    });
+    descargarCSV("planificacion-2026-27.csv", filas);
+    toast("Planificación exportada");
+  }
+
+  // ── Render global y eventos ─────────────────────────────────────────────
+  function renderAll() { renderLeyenda(); renderLista(); renderModelos(); renderPrecios(); renderResultados(); repintarMapa(); }
+
+  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
+    document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + t.dataset.tab));
+    // Lo editado en otra pestaña cambia los números: se recalcula al entrar
+    if (t.dataset.tab === "result") renderResultados();
+    if (t.dataset.tab === "precios") renderPrecios();
+    if (t.dataset.tab === "modelos") renderModelos();
+    if (t.dataset.tab === "lotes") { renderLista(); if (mapa) setTimeout(() => mapa.invalidateSize(), 50); }
+  }));
+  $("chips-mapa-reg").querySelectorAll("[data-mreg]").forEach((b) => b.addEventListener("click", () => irARegion(b.dataset.mreg)));
+  $("chips-ciclo").querySelectorAll("[data-ciclo]").forEach((b) => b.addEventListener("click", () => {
+    CICLO = b.dataset.ciclo;
+    $("chips-ciclo").querySelectorAll("[data-ciclo]").forEach((x) => x.classList.toggle("on", x === b));
+    repintarMapa(); renderLeyenda();
+  }));
+  $("chips-lote-medida").querySelectorAll("[data-medida]").forEach((b) => b.addEventListener("click", () => {
+    MEDIDA = b.dataset.medida;
+    $("chips-lote-medida").querySelectorAll("[data-medida]").forEach((x) => x.classList.toggle("on", x === b));
+    renderResultados();
+  }));
+  $("precios-usados").addEventListener("change", renderPrecios);
+  $("modal-x").addEventListener("click", () => { cerrarModal(); LOTE_SEL = ""; repintarMapa(); });
+  $("modal").addEventListener("mousedown", (e) => { if (e.target === $("modal")) { cerrarModal(); LOTE_SEL = ""; repintarMapa(); } });
+  $("exportar").addEventListener("click", exportarCSV);
+  $("exportar-plan").addEventListener("click", exportarPlanificacion);
+  $("reset").addEventListener("click", () => {
+    if (!confirm("Se pierden todos los cambios (cultivos, modelos, precios y el manejo propio de cada lote) y se vuelve a lo que dicen los Excel. ¿Seguir?")) return;
+    localStorage.removeItem(KEY); load(); renderAll(); toast("Datos del Excel restablecidos");
+  });
+
+  // ── Arranque ────────────────────────────────────────────────────────────
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=6");
+  // El presupuesto lo usan y editan Campo y Oficina: Aplicación no lo ve
+  if (!window.IAgUsuario.puede("verPresupuesto")) {
+    document.querySelector(".wrap").innerHTML = '<div class="block" style="text-align:center;padding:40px 20px">' +
+      '<div class="block-title">El presupuesto no está disponible para tu perfil</div>' +
+      '<div class="block-sub" style="margin:8px 0 16px">Lo arman Campo y Oficina.</div>' +
+      '<a class="btn btn-primary" href="index.html?v=6" style="text-decoration:none;display:inline-block">Volver al inicio</a></div>';
+    return;
+  }
+  if (window.PRESUPUESTO_FALTA) toast("Falta presupuesto-tarpuy.js — generalo con tools/build_presupuesto.py");
+  load();
+  try { iniciarMapa(); } catch (e) { /* sin Leaflet (o en pruebas) el resto funciona igual */ }
+  renderAll();
+  // presupuesto.html#result abre directo esa pestaña
+  const pedida = document.querySelector('.tab[data-tab="' + (location.hash || "").slice(1) + '"]');
+  if (pedida) pedida.click();
+  // Llegaron cambios de otros desde el Drive (por ejemplo, Oficina editó un modelo)
+  if (window.IAgNube) window.IAgNube.alCambiar(KEY, () => { load(); renderAll(); });
+})();
+</script>
+</body>
+</html>
