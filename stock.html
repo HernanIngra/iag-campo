@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=6">← Inicio</a>
+  <a class="back" href="index.html?v=7">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -892,16 +892,16 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=6"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=6"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=6"></script>
-<script src="lotes-tarpuy.js?v=6" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=6" onerror="window.APLIC_FALTA=true"></script>
-<script src="senasa-catalogo.js?v=6" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=6" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=7"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=7"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=7"></script>
+<script src="lotes-tarpuy.js?v=7" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=7" onerror="window.APLIC_FALTA=true"></script>
+<script src="senasa-catalogo.js?v=7" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=7" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=6" onerror="window.INASE_FALTA=true"></script>
-<script src="nube.js?v=6"></script>
+<script src="semillas-catalogo.js?v=7" onerror="window.INASE_FALTA=true"></script>
+<script src="nube.js?v=7"></script>
 
 <script>
 (function () {
@@ -2815,17 +2815,12 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (!puedeEnZona("remitir", zonaDeOT())) return toast("El producto lo retira Aplicación de la zona");
     const filas = analizarOT().filter((a) => a.p && a.nec > 0.0001);
     if (!filas.length) return toast("Cargá al menos un producto con dosis");
-    const sinDecidir = filas.filter((a) => a.f.estado === "elegir");
-    if (sinDecidir.length) return toast("Decidí si se trae o se compra: " + sinDecidir.map((a) => a.p.marca).join(", "));
-
-    // Envases cerrados que se retiran: lo planificado, sin pasarse de lo que hay
-    const cerr = filas.map((a) => {
-      if (!a.f.dep || a.r.cerrado <= 0.0001) return 0;
-      const hay = Math.max(0, saldo(a.p.id, a.f.dep.id, "cerrado"));
-      if (a.r.cerrado <= hay + 0.0001) return redondear(a.r.cerrado);
-      const env = envaseDe(a.p);
-      return redondear(env > 0 ? Math.floor(hay / env + 1e-9) * env : hay);
-    });
+    // Que falte stock no frena la orden: se retira lo planificado y el saldo
+    // queda en negativo (se ve en rojo), para corregirlo después con la compra.
+    // Un producto de la otra zona sin decidir se toma como «comprar».
+    const zona = zonaDeOT();
+    const depDe = (a) => a.f.dep || depById(depositoDeRetorno(zona, "")) || S.depositos[0] || null;
+    const cerr = filas.map((a) => (a.r.cerrado > 0.0001 && depDe(a) ? redondear(a.r.cerrado) : 0));
     const numero = siguienteNumero("RS-", S.ordenes.map((o) => o.remito && o.remito.numero), S.remitoSeq);
 
     abrirModal("Remito de salida " + numero,
@@ -2835,7 +2830,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
           <th class="num" style="width:120px">Cerrados</th><th class="num">Vuelve (est.)</th></tr></thead>
         <tbody id="rs-body"></tbody>
       </table></div>
-      <div class="hint" style="margin-top:10px">Primero se usan los envases abiertos del Rincón de la zona. Si no hay stock suficiente se retira lo que hay y el resto queda para comprar.</div>
+      <div class="hint" style="margin-top:10px">Primero se usan los envases abiertos del Rincón de la zona. Si no alcanza el stock, se retira igual y el saldo queda en negativo hasta que se cargue la compra.</div>
       <div class="btn-row">
         <button class="btn btn-primary" id="rs-ok">Registrar remito</button>
         <button class="btn btn-ghost" id="rs-cancelar">Cancelar</button>
@@ -2849,8 +2844,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
           <td><strong>${esc(a.p.marca)}</strong>${a.f.estado === "comprar" ? `<div class="comprar">${textoComprar(a.p, Math.max(0, a.nec - total))}</div>` : ""}</td>
           <td class="num" style="color:#64748b">${fmt(a.nec, 2)} ${unidadLabel(a.p, a.nec)}</td>
           <td style="font-size:12px">${a.r.abiertos.length ? a.r.abiertos.map((x) => fmt(x.cant, 2) + " " + a.p.unidad + " · " + esc(x.dep.nombre)).join("<br>") : '<span style="color:#cbd5e1">—</span>'}</td>
-          <td>${a.r.cerrado > 0.0001 && a.f.dep ? esc(a.f.dep.nombre) + (a.f.estado === "traer" ? ' <span class="badge b-amber">otra zona</span>' : "") : "—"}</td>
-          <td class="num">${a.r.cerrado > 0.0001 && a.f.dep ? `<input type="number" min="0" step="${envaseDe(a.p) || 0.01}" value="${cerr[i]}" data-rs="${i}" style="text-align:right" />` : "—"}</td>
+          <td>${a.r.cerrado > 0.0001 && depDe(a) ? esc(depDe(a).nombre) + (a.f.estado === "traer" ? ' <span class="badge b-amber">otra zona</span>' : "") : "—"}
+            ${cerr[i] > 0 && depDe(a) && cerr[i] - saldo(a.p.id, depDe(a).id, "cerrado") > 0.0001
+              ? `<div style="font-size:11px;color:#be123c;font-weight:700">sin stock suficiente: queda en ${fmt(saldo(a.p.id, depDe(a).id, "cerrado") - cerr[i], 1)}</div>` : ""}</td>
+          <td class="num">${a.r.cerrado > 0.0001 && depDe(a) ? `<input type="number" min="0" step="${envaseDe(a.p) || 0.01}" value="${cerr[i]}" data-rs="${i}" style="text-align:right" />` : "—"}</td>
           <td class="num" style="color:${vuelve > 0.0001 ? "#15803d" : "#cbd5e1"};font-weight:700">${vuelve > 0.0001 ? fmt(vuelve, 2) + " " + a.p.unidad : "—"}</td>
         </tr>`;
       }).join("");
@@ -2862,19 +2859,16 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("rs-cancelar").addEventListener("click", cerrarModal);
     $("rs-ok").addEventListener("click", () => {
       if (!filas.some((a, i) => a.r.deAbierto > 0.0001 || cerr[i] > 0)) return toast("No hay nada para retirar");
-      const negativos = filas.filter((a, i) => cerr[i] > 0 && cerr[i] - saldo(a.p.id, a.f.dep.id, "cerrado") > 0.0001);
-      if (negativos.length &&
-          !confirm("No alcanzan los envases cerrados de: " + negativos.map((a) => a.p.marca).join(", ") + ".\n\n¿Retirar igual? El saldo va a quedar en negativo.")) return;
 
       const fecha = hoy();
       const quien = (usuarioActual() || {}).id || "";
       filas.forEach((a, i) => {
         const base = { fecha, prod: a.p.id, precio: 0, ref: numero, otId: OT.id, nota: OT.numero + " · " + OT.labor, usuario: quien };
         const partes = a.r.abiertos.map((x) => ({ dep: x.dep.id, sub: "abierto", cant: x.cant }));
-        if (cerr[i] > 0) partes.push({ dep: a.f.dep.id, sub: "cerrado", cant: cerr[i] });
+        if (cerr[i] > 0) partes.push({ dep: depDe(a).id, sub: "cerrado", cant: cerr[i] });
         a.it.retiros = partes;
         a.it.retirado = redondear(partes.reduce((s, x) => s + x.cant, 0));
-        a.it.origenRemito = cerr[i] > 0 ? a.f.dep.id : (partes[0] ? partes[0].dep : "");
+        a.it.origenRemito = cerr[i] > 0 ? depDe(a).id : (partes[0] ? partes[0].dep : "");
         if (partes.length) alTransito(partes, base);
       });
       OT.remito = { numero, fecha, usuario: quien };
@@ -4266,7 +4260,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=6");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=7");
   load();
   vincularConRegistro();
   nuevaOT();

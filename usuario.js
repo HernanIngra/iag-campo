@@ -68,13 +68,13 @@
   function barra(destinoInicio) {
     var u = actual();
     if (!u) {
-      return '<a class="hbtn" href="' + (destinoInicio || "index.html?v=6") +
+      return '<a class="hbtn" href="' + (destinoInicio || "index.html?v=7") +
              '" style="text-decoration:none">Identificarse</a>';
     }
     return '<span class="quien" title="' + u.hace + '">' +
              '<b>' + u.nombre + '</b><span class="rol">' + u.titulo + '</span>' +
            '</span>' +
-           '<a class="hbtn" href="' + (destinoInicio || "index.html?v=6") +
+           '<a class="hbtn" href="' + (destinoInicio || "index.html?v=7") +
            '" style="text-decoration:none" title="Cambiar de usuario">Cambiar</a>';
   }
 
