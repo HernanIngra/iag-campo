@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=19">← Inicio</a>
+  <a class="back" href="index.html?v=20">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -925,18 +925,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=19"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=19"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=19"></script>
-<script src="lotes-tarpuy.js?v=19" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=19" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=19"></script>
-<script src="senasa-catalogo.js?v=19" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=19" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=20"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=20"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=20"></script>
+<script src="lotes-tarpuy.js?v=20" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=20" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=20"></script>
+<script src="senasa-catalogo.js?v=20" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=20" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=19" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=19"></script>
-<script src="nube.js?v=19"></script>
+<script src="semillas-catalogo.js?v=20" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=20"></script>
+<script src="nube.js?v=20"></script>
 
 <script>
 (function () {
@@ -2243,8 +2243,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       g.innerHTML = campos.map((c) => `<div class="sec-title" style="margin:6px 0">${esc(nombreCampo(c))}</div>
         <div class="lote-grid-in">${elegidos.filter((l) => l.campo === c).map(htmlLote).join("")}</div>`).join("") +
         (bloqueada ? "" : `<div class="fila" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-          <button class="btn btn-ghost btn-sm" id="ot-mas-lotes">＋ Agregar lotes</button>
-          <button class="btn btn-ghost btn-sm" id="ot-mas-campos">＋ Agregar campo</button>
+          <button class="btn btn-ghost btn-sm" id="ot-mas-lotes">＋ Sumar otros lotes</button>
+          <button class="btn btn-ghost btn-sm" id="ot-mas-campos">＋ Sumar otros campos</button>
         </div>`);
       if ($("ot-mas-lotes")) $("ot-mas-lotes").addEventListener("click", () => {
         PICKER = "elegir";
@@ -2262,10 +2262,6 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const conLotes = new Set(OT.lotes.map((x) => (loteById(x.loteId) || {}).campo).filter(Boolean));
     const campos = Array.from(new Set(elegibles.map((l) => l.campo)))
       .sort((a, b) => (conLotes.has(b) - conLotes.has(a)) || nombreCampo(a).localeCompare(nombreCampo(b)));
-    if (!CAMPO_OT && OT.lotes.length) {
-      const l0 = loteById(OT.lotes[0].loteId);
-      if (l0) CAMPO_OT = l0.campo;
-    }
     if (CAMPO_OT && campos.indexOf(CAMPO_OT) === -1) CAMPO_OT = "";
 
     const tarjetas = campos.map((c) => {
@@ -2284,12 +2280,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
     const lotes = CAMPO_OT ? elegibles.filter((l) => l.campo === CAMPO_OT)
       .sort((a, b) => (LOTES_ARRIBA.has(b.id) - LOTES_ARRIBA.has(a.id)) || porNombre(a, b)) : [];
+    // Sin campo: sólo los campos. Con campo: sólo ese campo y sus lotes.
     const listo = OT.lotes.length
-      ? `<div style="margin-top:12px"><button class="btn btn-green btn-sm" id="ot-lotes-listo">Listo · ver sólo los ${OT.lotes.length} elegido(s)</button></div>` : "";
-    g.innerHTML = `<div class="campos-ot">${tarjetas}</div>` + (CAMPO_OT
-      ? `<div class="lote-grid-in">${lotes.map(htmlLote).join("")}</div>` + listo
-      : '<div class="hint" style="margin-top:10px">Tocá un campo para ver sus lotes.</div>' + listo);
+      ? `<button class="btn btn-green btn-sm" id="ot-lotes-listo">Listo · ver sólo los ${OT.lotes.length} elegido(s)</button>` : "";
+    g.innerHTML = CAMPO_OT
+      ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+           <div class="sec-title" style="margin:0">${esc(nombreCampo(CAMPO_OT))}</div><span class="spacer"></span>
+           <button class="btn btn-ghost btn-sm" id="ot-otros-campos">${OT.lotes.length ? "＋ Sumar otros campos" : "Ver otros campos"}</button>
+         </div>
+         <div class="lote-grid-in">${lotes.map(htmlLote).join("")}</div>` +
+        (listo ? `<div style="margin-top:12px">${listo}</div>` : "")
+      : `<div class="campos-ot">${tarjetas}</div>` +
+        (listo ? `<div style="margin-top:12px">${listo}</div>` : '<div class="hint" style="margin-top:10px">Tocá un campo para ver sus lotes.</div>');
     if ($("ot-lotes-listo")) $("ot-lotes-listo").addEventListener("click", () => { PICKER = "elegidos"; renderLotePicker(); });
+    if ($("ot-otros-campos")) $("ot-otros-campos").addEventListener("click", () => { CAMPO_OT = ""; renderLotePicker(); });
     g.querySelectorAll("[data-campo-ot]").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.otraZona) return toast("Una orden no puede tener lotes de Norte y de Lajitas: hacé una orden por zona");
       CAMPO_OT = CAMPO_OT === b.dataset.campoOt ? "" : b.dataset.campoOt;
@@ -2329,6 +2333,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         }
         if (cb.checked) OT.lotes.push({ loteId: id, ha: loteById(id).ha, nota: "" });
         else OT.lotes = OT.lotes.filter((x) => x.loteId !== id);
+        // El primer lote elegido: se esconde todo lo demás y quedan los botones para sumar
+        if (cb.checked && OT.lotes.length === 1) PICKER = "elegidos";
         // El cultivo de la orden sale de la planificación, si todos los lotes coinciden
         const cults = Array.from(new Set(OT.lotes.map((x) => (planDe(x.loteId) || {}).cultivo).filter(Boolean)));
         if (cults.length === 1 && !OT.cultivoAMano) OT.cultivo = cultivoDeOT(cults[0]);
@@ -4513,7 +4519,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       }
       OT.lotes = S.lotes.map((l) => ({ loteId: l.id, ha: l.ha, nota: "" })); renderOT();
     });
-    $("lotes-none").addEventListener("click", () => { OT.lotes = []; renderOT(); });
+    $("lotes-none").addEventListener("click", () => { OT.lotes = []; CAMPO_OT = ""; renderOT(); });
 
     // OT · productos
     $("add-prod").addEventListener("click", () => {
@@ -4598,7 +4604,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=19");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=20");
   load();
   vincularConRegistro();
   nuevaOT();

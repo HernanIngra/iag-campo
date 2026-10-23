@@ -139,7 +139,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=19" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=20" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -178,13 +178,13 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=19"></script>
-<script src="usuario.js?v=19"></script>
-<script src="lotes-tarpuy.js?v=19" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=19" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=19"></script>
-<script src="hojas.js?v=19"></script>
-<script src="nube.js?v=19"></script>
+<script src="vendor/leaflet/leaflet.js?v=20"></script>
+<script src="usuario.js?v=20"></script>
+<script src="lotes-tarpuy.js?v=20" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=20" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=20"></script>
+<script src="hojas.js?v=20"></script>
+<script src="nube.js?v=20"></script>
 <script>
 (function () {
   "use strict";
@@ -711,7 +711,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=19";
+    window.location.href = "stock.html?v=20";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -753,7 +753,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=19");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=20");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length
