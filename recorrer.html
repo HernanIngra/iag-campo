@@ -139,7 +139,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=17" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=18" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -178,13 +178,13 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=17"></script>
-<script src="usuario.js?v=17"></script>
-<script src="lotes-tarpuy.js?v=17" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=17" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=17"></script>
-<script src="hojas.js?v=17"></script>
-<script src="nube.js?v=17"></script>
+<script src="vendor/leaflet/leaflet.js?v=18"></script>
+<script src="usuario.js?v=18"></script>
+<script src="lotes-tarpuy.js?v=18" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=18" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=18"></script>
+<script src="hojas.js?v=18"></script>
+<script src="nube.js?v=18"></script>
 <script>
 (function () {
   "use strict";
@@ -249,7 +249,12 @@
   function cultivoPlan(loteId) {
     let S = null;
     try { S = JSON.parse(localStorage.getItem("iag_stock_v2") || "null"); } catch (e) { S = null; }
-    const p = S && Array.isArray(S.planificacion) ? S.planificacion.find((x) => x.loteId === loteId && x.cultivo) : null;
+    if (!S || !Array.isArray(S.planificacion)) return "";
+    // Por id y, si no, por nombre: un equipo con datos viejos puede tener otros
+    // ids de lote, pero «SE4B» es «SE4B» en el mapa y en la planilla
+    const l = LOTES.find((x) => x.id === loteId);
+    const nom = l ? sinAcentos(l.nombre).replace(/\s+/g, "") : "";
+    const p = S.planificacion.find((x) => x.cultivo && (x.loteId === loteId || (nom && sinAcentos(x.lote || "").replace(/\s+/g, "") === nom)));
     return p ? p.cultivo : "";
   }
   function claveColor(c) {
@@ -706,7 +711,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=17";
+    window.location.href = "stock.html?v=18";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -748,7 +753,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=17");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=18");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length

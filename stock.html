@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=17">← Inicio</a>
+  <a class="back" href="index.html?v=18">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -925,18 +925,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=17"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=17"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=17"></script>
-<script src="lotes-tarpuy.js?v=17" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=17" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=17"></script>
-<script src="senasa-catalogo.js?v=17" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=17" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=18"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=18"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=18"></script>
+<script src="lotes-tarpuy.js?v=18" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=18" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=18"></script>
+<script src="senasa-catalogo.js?v=18" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=18" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=17" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=17"></script>
-<script src="nube.js?v=17"></script>
+<script src="semillas-catalogo.js?v=18" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=18"></script>
+<script src="nube.js?v=18"></script>
 
 <script>
 (function () {
@@ -2184,7 +2184,12 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   /** El cultivo planificado de un lote (pestaña Planificación de la planilla). */
-  const planDe = (loteId) => (S.planificacion || []).find((p) => p.loteId === loteId && p.cultivo);
+  // Por id y, si no, por nombre del lote (un equipo con datos viejos puede tener otros ids)
+  const planDe = (loteId) => {
+    const l = loteById(loteId);
+    const nom = l ? slug(l.nombre) : "";
+    return (S.planificacion || []).find((p) => p.cultivo && (p.loteId === loteId || (nom && slug(p.lote || "") === nom)));
+  };
   /** «Maíz+brachiaria», «Maiz/Braquiaria» → «Maíz» (las opciones de la orden). */
   function cultivoDeOT(c) {
     const t = sinAcentos(c);
@@ -2204,6 +2209,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
   // Campo abierto en el selector de lotes de la orden
   let CAMPO_OT = "";
+  // Lotes que van arriba en la grilla: los que ya estaban elegidos al abrir el
+  // campo (los que se tocaron en el mapa). No se reordena mientras se tilda,
+  // para que los lotes no salten bajo el dedo.
+  let LOTES_ARRIBA = new Set();
 
   /** Lotes que se ofrecen en la orden: los reales, o todos si no hay shapefile. */
   function lotesElegibles() {
@@ -2221,8 +2230,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (!elegibles.length) { g.innerHTML = '<div class="empty">No hay lotes cargados. Agregalos en la pestaña de configuración.</div>'; return; }
 
     // Primero los campos; al tocar uno se abren sus lotes
+    // Primero los campos con lotes elegidos (el de los lotes tocados en el mapa)
+    const conLotes = new Set(OT.lotes.map((x) => (loteById(x.loteId) || {}).campo).filter(Boolean));
     const campos = Array.from(new Set(elegibles.map((l) => l.campo)))
-      .sort((a, b) => nombreCampo(a).localeCompare(nombreCampo(b)));
+      .sort((a, b) => (conLotes.has(b) - conLotes.has(a)) || nombreCampo(a).localeCompare(nombreCampo(b)));
     if (!CAMPO_OT && OT.lotes.length) {
       const l0 = loteById(OT.lotes[0].loteId);
       if (l0) CAMPO_OT = l0.campo;
@@ -2243,7 +2254,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       </button>`;
     }).join("");
 
-    const lotes = CAMPO_OT ? elegibles.filter((l) => l.campo === CAMPO_OT).sort(porNombre) : [];
+    const lotes = CAMPO_OT ? elegibles.filter((l) => l.campo === CAMPO_OT)
+      .sort((a, b) => (LOTES_ARRIBA.has(b.id) - LOTES_ARRIBA.has(a.id)) || porNombre(a, b)) : [];
     g.innerHTML = `<div class="campos-ot">${tarjetas}</div>` + (CAMPO_OT
       ? `<div class="lote-grid-in">${lotes.map((l) => {
       const sel = OT.lotes.find((x) => x.loteId === l.id);
@@ -2265,6 +2277,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     g.querySelectorAll("[data-campo-ot]").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.otraZona) return toast("Una orden no puede tener lotes de Norte y de Lajitas: hacé una orden por zona");
       CAMPO_OT = CAMPO_OT === b.dataset.campoOt ? "" : b.dataset.campoOt;
+      LOTES_ARRIBA = new Set(OT.lotes.map((x) => x.loteId));
       renderLotePicker();
     }));
     g.querySelectorAll("[data-check]").forEach((cb) => {
@@ -4547,7 +4560,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=17");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=18");
   load();
   vincularConRegistro();
   nuevaOT();
@@ -4573,6 +4586,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const antes = OT.lotes.length;
     if (zR) OT.lotes = OT.lotes.filter((x) => !zonaDeLote(x.loteId) || zonaDeLote(x.loteId) === zR);
     if (OT.lotes.length < antes) toast("Se dejaron afuera " + (antes - OT.lotes.length) + " lote(s) de otra zona: una orden es de una sola zona");
+    LOTES_ARRIBA = new Set(OT.lotes.map((x) => x.loteId));
     try { localStorage.removeItem("iag_receta_pendiente"); } catch (e) { /* nada */ }
     save();
     irATab("ot");

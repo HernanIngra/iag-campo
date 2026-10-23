@@ -293,8 +293,9 @@
   }
   function planDeFila(S, id, f) {
     var lote = String(f["Lote"] || "").trim();
-    var l = (S.lotes || []).find(function (y) { return slug(y.nombre) === slug(lote); }) ||
-            (Array.isArray(g.LOTES) ? g.LOTES.find(function (y) { return slug(y.nombre) === slug(lote); }) : null);
+    // Primero el lote del mapa (ids del shapefile); si no, el que tenga el equipo
+    var l = (Array.isArray(g.LOTES) ? g.LOTES.find(function (y) { return slug(y.nombre) === slug(lote); }) : null) ||
+            (S.lotes || []).find(function (y) { return slug(y.nombre) === slug(lote); });
     return { id: id, zona: f["Zona"] || "", campo: f["Campo"] || "", lote: lote, ha: num(f["ha"]), cultivo: String(f["Cultivo"] || "").trim(),
              variedad: f["Variedad"] || "", obs: f["Observaciones"] || "", loteId: l ? l.id : "" };
   }
