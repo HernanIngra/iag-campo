@@ -33,7 +33,7 @@ programa: no se tocan. La columna **datos** (oculta) tampoco.
 | Envase | Cerrado o Rincón (envase abierto) |
 | OT · Remito | La orden y el remito, si corresponde |
 | Verificado | En compras: Sí / No (si alguien la vio en el galpón) |
-| Confirmado | Pedidos a Lartirigoyen: **No** hasta que el socio lo confirma (es como un presupuesto; la confirmación es la factura). Mientras diga No, **no suma al stock**. Se tilda en la app (Stock → «Pedidos a Lartirigoyen sin confirmar») o se pone Sí acá |
+| Confirmado | En compras: **No** = pedido o cotización; **Sí** = factura (o, si es del socio Lartirigoyen, aporte confirmado). Mientras diga No, **no suma al stock**. Se tilda en la app (Stock → «Pedidos y cotizaciones sin confirmar») o se pone Sí acá. Una factura se puede cargar directo, sin pedido previo |
 
 ### Stock
 
@@ -46,6 +46,12 @@ pedidos sin confirmar. No se escribe a mano.
 Zona · Campo · Lote · ha · Cultivo · Variedad. «En el mapa» = No para lotes
 que no están dibujados (Banquinas, EG7 a EG11). La app usa el cultivo para
 pintar el mapa y para proponer el cultivo de la orden.
+
+### OT · zonas
+
+Una orden es de **una sola zona**: no mezcla lotes del Norte y de Lajitas (la
+app ni deja tocar «Recetar»). Juanjo receta en las dos zonas, en órdenes
+separadas; Rubén sólo en Lajitas y Ramiro sólo en el Norte.
 
 ### OT · estados
 

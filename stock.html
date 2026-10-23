@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=11">← Inicio</a>
+  <a class="back" href="index.html?v=12">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -535,8 +535,8 @@
       <div class="block-header">
         <div class="block-num">✓</div>
         <div>
-          <div class="block-title">Pedidos a Lartirigoyen sin confirmar</div>
-          <div class="block-sub">Lo que aporta el socio. Como una cotización: entra al stock recién cuando él lo confirma (equivale a la factura)</div>
+          <div class="block-title">Pedidos y cotizaciones sin confirmar</div>
+          <div class="block-sub">Entran al stock recién con la factura del proveedor o, si es del socio (Lartirigoyen), con la confirmación del aporte</div>
         </div>
       </div>
       <div id="confirmar-lista"></div>
@@ -606,6 +606,13 @@
 
       <!-- Compra: una misma compra puede repartirse entre varios depósitos -->
       <div id="mv-compra" style="margin-top:14px">
+        <div class="field" style="max-width:420px;margin-bottom:12px">
+          <label class="fl">Etapa</label>
+          <select id="mv-etapa">
+            <option value="factura">Factura o confirmación de aporte (suma al stock)</option>
+            <option value="pedido">Pedido o cotización (todavía no suma)</option>
+          </select>
+        </div>
         <div class="sec-title">Reparto entre depósitos</div>
         <div class="tbl-scroll">
           <table>
@@ -625,8 +632,10 @@
           </table>
         </div>
         <div class="hint">
-          La compra entra al stock en el momento. Si nadie la vio todavía en el galpón queda
-          <strong>sin verificar</strong> hasta que alguien le ponga el tilde.
+          Con factura (o aporte confirmado del socio) entra al stock en el momento; si nadie la vio todavía
+          en el galpón queda <strong>sin verificar</strong> hasta que alguien le ponga el tilde.
+          Un <strong>pedido o cotización</strong> no suma: queda en «Pedidos y cotizaciones sin confirmar»
+          hasta que llega la factura. Se puede cargar directo la factura, sin pedido previo.
         </div>
       </div>
 
@@ -908,18 +917,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=11"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=11"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=11"></script>
-<script src="lotes-tarpuy.js?v=11" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=11" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=11"></script>
-<script src="senasa-catalogo.js?v=11" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=11" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=12"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=12"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=12"></script>
+<script src="lotes-tarpuy.js?v=12" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=12" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=12"></script>
+<script src="senasa-catalogo.js?v=12" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=12" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=11" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=11"></script>
-<script src="nube.js?v=11"></script>
+<script src="semillas-catalogo.js?v=12" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=12"></script>
+<script src="nube.js?v=12"></script>
 
 <script>
 (function () {
@@ -927,7 +936,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
   // Zona de cada campo (NORTE / LAJITAS), para saber de qué depósito sale el
   // producto. La genera tools/build_aplicaciones.py a partir del Excel.
-  const CAMPOS_ZONA = (window.APLIC_META && window.APLIC_META.campos) || {};
+  const CAMPOS_ZONA = Object.assign({}, (window.APLIC_META && window.APLIC_META.campos) || {}, window.CAMPOS_TARPUY || {});
   // Lotes reales de la empresa, del shapefile. Vacío si no se cargó el archivo.
   const REALES = Array.isArray(window.LOTES) ? window.LOTES : [];
   const nombreCampo = (c) => (CAMPOS_ZONA[c] && CAMPOS_ZONA[c].nombre) || c || "Sin campo";
@@ -1896,7 +1905,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    */
   function sinVerificar(prodId, depositoId) {
     return S.movimientos.reduce((acc, m) => {
-      if (m.prod !== prodId || m.tipo !== "compra" || m.verificado !== false) return acc;
+      if (m.prod !== prodId || m.tipo !== "compra" || m.verificado !== false || m.confirmado === false) return acc;
       if (depositoId && m.deposito !== depositoId) return acc;
       return acc + m.cant;
     }, 0);
@@ -2014,6 +2023,17 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   function zonaDeOT() { return zonaDeOrden(OT); }
+
+  /** Zona de un lote (NORTE, LAJITAS) o "" si no se sabe. */
+  function zonaDeLote(id) {
+    const l = loteById(id);
+    return l && l.campo ? zonaDeCampo(l.campo) : "";
+  }
+
+  /** Una orden es de una sola zona: Norte y Lajitas no se mezclan. */
+  function mezclaZonas(o) {
+    return new Set(o.lotes.map((x) => zonaDeLote(x.loteId)).filter(Boolean)).size > 1;
+  }
 
   /** Zona de los lotes de una orden. Devuelve "" si están mezclados. */
   function zonaDeOrden(o) {
@@ -2179,9 +2199,12 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
   /** Lotes que se ofrecen en la orden: los reales, o todos si no hay shapefile. */
   function lotesElegibles() {
-    if (!REALES.length) return S.lotes;
     const real = new Set(REALES.map((r) => r.campo + "|" + r.nombre));
-    return S.lotes.filter((l) => real.has(l.campo + "|" + l.nombre));
+    const lotes = REALES.length ? S.lotes.filter((l) => real.has(l.campo + "|" + l.nombre)) : S.lotes;
+    // Rubén receta sólo en Lajitas y Ramiro sólo en el Norte; Juanjo, en las dos
+    const u = usuarioActual();
+    if (!u || !u.zona) return lotes;
+    return lotes.filter((l) => !zonaDeCampo(l.campo) || zonaDeCampo(l.campo) === u.zona);
   }
 
   function renderLotePicker() {
@@ -2202,7 +2225,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       const delCampo = elegibles.filter((l) => l.campo === c);
       const marcados = OT.lotes.filter((x) => { const l = loteById(x.loteId); return l && l.campo === c; });
       const z = zonaDeCampo(c);
-      return `<button class="campo-ot ${c === CAMPO_OT ? "on" : ""}" data-campo-ot="${esc(c)}">
+      // Con lotes ya elegidos, los campos de la otra zona no se pueden abrir
+      const zOT = zonaDeOT();
+      const otraZona = OT.lotes.length && zOT && z && z !== zOT;
+      return `<button class="campo-ot ${c === CAMPO_OT ? "on" : ""}" data-campo-ot="${esc(c)}"${otraZona ? ` data-otra-zona="1" style="opacity:.45" title="Esta orden es de ${esc(ZONAS[zOT] || zOT)}: una orden no mezcla zonas"` : ""}>
         <span class="campo-ot-n">${esc(nombreCampo(c))}</span>
         <span class="campo-ot-m">${delCampo.length} lotes · ${fmt(delCampo.reduce((a, l) => a + num(l.ha), 0), 0)} ha${z ? " · " + esc(ZONAS[z] || z) : ""}</span>
         ${marcados.length ? `<span class="campo-ot-sel">${marcados.length} elegido(s)</span>` : ""}
@@ -2229,6 +2255,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       : '<div class="hint" style="margin-top:10px">Tocá un campo para ver sus lotes.</div>');
 
     g.querySelectorAll("[data-campo-ot]").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.otraZona) return toast("Una orden no puede tener lotes de Norte y de Lajitas: hacé una orden por zona");
       CAMPO_OT = CAMPO_OT === b.dataset.campoOt ? "" : b.dataset.campoOt;
       renderLotePicker();
     }));
@@ -2236,6 +2263,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       cb.addEventListener("change", (e) => {
         e.stopPropagation();
         const id = cb.dataset.check;
+        const zOT = zonaDeOT();
+        if (cb.checked && OT.lotes.length && zOT && zonaDeLote(id) && zonaDeLote(id) !== zOT) {
+          cb.checked = false;
+          return toast("Una orden no puede tener lotes de Norte y de Lajitas: hacé una orden por zona");
+        }
         if (cb.checked) OT.lotes.push({ loteId: id, ha: loteById(id).ha, nota: "" });
         else OT.lotes = OT.lotes.filter((x) => x.loteId !== id);
         // El cultivo de la orden sale de la planificación, si todos los lotes coinciden
@@ -2570,12 +2602,15 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     };
     // No se esconden los botones: se explican. Que Juanjo vea que la
     // confirmación existe y sepa que la hace Rubén o Ramiro.
-    poner("ot-save", estado === "borrador" && (!u || puedeEnZona("emitirOT", zonaDeOT())),
+    const mezcla = mezclaZonas(OT);
+    poner("ot-save", estado === "borrador" && !mezcla && (!u || puedeEnZona("emitirOT", zonaDeOT())),
           estado !== "borrador" ? "La orden ya tiene remito: no se modifica"
+            : mezcla ? "Una orden no puede tener lotes de Norte y de Lajitas"
             : puede("emitirOT") ? "Esos lotes son de otra zona" : "Las órdenes las emite el encargado");
     const zona = zonaDeOT();
-    poner("ot-remito", estado === "borrador" && puedeEnZona("remitir", zona),
-          estado === "borrador" ? "El producto lo retira el equipo o " + ZONA_TXT(zona) : "El producto ya salió con el remito");
+    poner("ot-remito", estado === "borrador" && !mezcla && puedeEnZona("remitir", zona),
+          mezcla ? "Una orden no puede tener lotes de Norte y de Lajitas"
+            : estado === "borrador" ? "El producto lo retira el equipo o " + ZONA_TXT(zona) : "El producto ya salió con el remito");
     // El equipo reporta lo que aplicó; el encargado lo confirma (o reporta y confirma él)
     poner("ot-reportar", estado === "transito" && puedeEnZona("reportar", zona),
           estado === "borrador" ? "Primero el remito de salida" : estado === "transito" ? "La reporta el equipo de " + (ZONAS[zona] || "la zona") : "Ya está reportada");
@@ -2866,6 +2901,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   function guardarOT(estado) {
+    if (mezclaZonas(OT)) { toast("Una orden no puede tener lotes de Norte y de Lajitas: hacé una orden por zona"); return false; }
     OT.campania = $("ot-campania").value;
     OT.cultivo = $("ot-cultivo").value;
     OT.responsable = $("ot-responsable").value;
@@ -3752,11 +3788,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (!lista.length) { cont.innerHTML = ""; return; }
     const ok = puede("comprar");
     cont.innerHTML = `<div class="tbl-scroll"><table>
-      <thead><tr><th style="width:44px">✓</th><th>Producto</th><th class="num">Cantidad</th><th>Depósito</th><th>Pedido</th><th>Nota</th></tr></thead>
+      <thead><tr><th style="width:70px">Factura / aporte ✓</th><th>Producto</th><th class="num">Cantidad</th><th>Depósito</th><th>Pedido</th><th>Nota</th></tr></thead>
       <tbody>${lista.map((m) => {
         const p = prodById(m.prod), d = depById(m.deposito);
         return `<tr>
-          <td><input type="checkbox" data-confirmar="${m.id}" style="width:auto;transform:scale(1.3)" ${ok ? "" : "disabled title=\"Lo confirma Oficina o el gerente\""} /></td>
+          <td><input type="checkbox" data-confirmar="${m.id}" style="width:auto;transform:scale(1.3)" ${ok ? "" : "disabled title=\"Lo confirma Oficina o el gerente, con la factura\""} /></td>
           <td><strong>${esc(p ? p.marca : "?")}</strong></td>
           <td class="num">${fmt(m.cant, 2)} ${p ? unidadLabel(p, m.cant) : ""}</td>
           <td>${esc(d ? d.nombre : "—")}</td>
@@ -3773,7 +3809,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       m.confirmadoPor = (usuarioActual() || {}).id || "";
       save(); renderAll();
       const p = prodById(m.prod);
-      toast("Confirmado por el socio: " + fmt(m.cant, 2) + " de " + (p ? p.marca : "") + " — ya cuenta en el stock");
+      const socio = /lartirigoyen/i.test((depById(m.deposito) || {}).nombre || "") || m.proveedor;
+      toast((socio ? "Aporte confirmado: " : "Facturado: ") + fmt(m.cant, 2) + " de " + (p ? p.marca : "") + " — ya cuenta en el stock");
     }));
   }
 
@@ -3944,16 +3981,26 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       if (repetido) return toast("Hay un depósito repetido en el reparto");
 
       const compra = uid();
+      // Pedido o cotización: queda registrado pero no suma hasta la factura
+      const pedido = $("mv-etapa") && $("mv-etapa").value === "pedido";
       filas.forEach((r) => {
+        const verif = !pedido && !!r.verificado;
         S.movimientos.push(Object.assign({}, base, {
           id: uid(), tipo: "compra", deposito: r.dep, zona: (depById(r.dep) || {}).zona || r.zona, cant: num(r.cant),
-          verificado: !!r.verificado, compra,
-          ...(r.verificado ? { verificadoPor: base.usuario, fechaVerificacion: base.fecha } : {}),
+          verificado: verif, compra,
+          ...(pedido ? { confirmado: false } : {}),
+          ...(verif ? { verificadoPor: base.usuario, fechaVerificacion: base.fecha } : {}),
         }));
       });
       const total = filas.reduce((a, r) => a + num(r.cant), 0);
-      const porVerificar = filas.filter((r) => !r.verificado).length;
+      const porVerificar = pedido ? 0 : filas.filter((r) => !r.verificado).length;
       save();
+      if (pedido) {
+        MV_REPARTO = [{ zona: "", dep: "", cant: 0, verificado: false }];
+        $("mv-precio").value = ""; $("mv-nota").value = "";
+        renderAll(); modoMovimiento();
+        return toast("Pedido de " + fmt(total, 2) + " registrado: suma al stock cuando se confirme con la factura");
+      }
       MV_REPARTO = [{ zona: "", dep: "", cant: 0, verificado: false }];
       $("mv-precio").value = ""; $("mv-nota").value = "";
       renderAll();
@@ -4033,9 +4080,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         <td style="color:#64748b">${d ? esc(d.nombre) : "—"}</td>
         <td class="num" style="color:${color};font-weight:700">${cant > 0 ? "+" : ""}${fmt(cant, 2)} ${p ? unidadLabel(p, cant) : ""}</td>
         <td class="num" style="color:#64748b">${total ? "$" + fmt(total, 0) : "—"}</td>
-        <td style="font-size:12px;color:#64748b">${m.confirmado === false ? '<span class="badge b-red" style="margin-right:5px">sin confirmar (socio)</span>' : m.tipo === "compra" && m.verificado === false ? '<span class="badge b-amber" style="margin-right:5px">sin verificar</span>' : ""}${m.sub === "abierto" ? '<span class="badge b-amber" style="margin-right:5px">Rincón</span>' : ""}${esc(m.ref ? m.ref + " · " : "")}${esc(m.nota || "")}</td>
+        <td style="font-size:12px;color:#64748b">${m.confirmado === false ? '<span class="badge b-red" style="margin-right:5px">pedido sin confirmar</span>' : m.tipo === "compra" && m.verificado === false ? '<span class="badge b-amber" style="margin-right:5px">sin verificar</span>' : ""}${m.sub === "abierto" ? '<span class="badge b-amber" style="margin-right:5px">Rincón</span>' : ""}${esc(m.ref ? m.ref + " · " : "")}${esc(m.nota || "")}</td>
         <td style="white-space:nowrap">${
-          m.tipo === "compra" && m.verificado === false ? `<button class="link" data-mv-verificar="${m.id}" style="font-weight:800">✓ Verificar</button>` : ""
+          m.tipo === "compra" && m.verificado === false && m.confirmado !== false ? `<button class="link" data-mv-verificar="${m.id}" style="font-weight:800">✓ Verificar</button>` : ""
         }${(m.tipo === "uso" || m.tipo === "apertura" || m.tipo === "remito" || m.tipo === "retorno")
             ? '<span style="font-size:11px;color:#cbd5e1" title="Se anula desde la orden de trabajo">auto</span>'
             : `<button class="link del" data-mv-del="${m.id}" style="margin-left:6px">✕</button>`}</td>
@@ -4400,7 +4447,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     });
 
     // OT · acciones
-    $("ot-save").addEventListener("click", () => { guardarOT(); renderAll(); toast("Borrador guardado — " + OT.numero); });
+    $("ot-save").addEventListener("click", () => { if (guardarOT() === false) return; renderAll(); toast("Borrador guardado — " + OT.numero); });
     $("ot-remito").addEventListener("click", remitoOT);
     $("ot-confirm").addEventListener("click", () => confirmarOT());
     $("ot-reportar").addEventListener("click", () => confirmarOT("reportar"));
@@ -4477,7 +4524,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=11");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=12");
   load();
   vincularConRegistro();
   nuevaOT();
@@ -4497,6 +4544,12 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       }
       return { loteId: l.id, ha: l.ha, nota: "" };
     });
+    // El mapa ya no deja mezclar zonas ni recetar fuera de la propia; por las dudas
+    const uR = usuarioActual();
+    const zR = (uR && uR.zona) || zonaDeLote((OT.lotes[0] || {}).loteId);
+    const antes = OT.lotes.length;
+    if (zR) OT.lotes = OT.lotes.filter((x) => !zonaDeLote(x.loteId) || zonaDeLote(x.loteId) === zR);
+    if (OT.lotes.length < antes) toast("Se dejaron afuera " + (antes - OT.lotes.length) + " lote(s) de otra zona: una orden es de una sola zona");
     try { localStorage.removeItem("iag_receta_pendiente"); } catch (e) { /* nada */ }
     save();
     irATab("ot");

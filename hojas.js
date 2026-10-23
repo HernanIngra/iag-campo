@@ -94,7 +94,7 @@
       "Remito": m.tipo === "remito" ? (m.ref || "") : "",
       "Verificado": m.tipo === "compra" ? (m.verificado === false ? "No" : "Sí") : "",
       // Pedido al socio (Lartirigoyen): cuenta como compra recién cuando él lo confirma
-      "Confirmado": m.confirmado === false ? "No" : m.proveedor ? "Sí" : "",
+      "Confirmado": m.confirmado === false ? "No" : m.confirmado === true || m.proveedor ? "Sí" : "",
       "Precio US$": m.precio ? r3(m.precio) : "", "Nota": m.nota || "", "Usuario": m.usuario || "",
       "Anulado": "", "datos": JSON.stringify(resto),
     };
