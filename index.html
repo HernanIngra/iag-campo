@@ -71,17 +71,17 @@
   <div id="estado"></div>
 
   <div class="pie">
-    <a href="flujo.html?v=23" style="color:#1d4ed8;font-weight:700;text-decoration:none">¿Cómo funciona? Ver el circuito paso a paso →</a><br>
-    <a href="conectar.html?v=23" style="color:#1d4ed8;font-weight:700;text-decoration:none">☁ Conectar con el Drive</a><br><br>
+    <a href="flujo.html?v=24" style="color:#1d4ed8;font-weight:700;text-decoration:none">¿Cómo funciona? Ver el circuito paso a paso →</a><br>
+    <a href="conectar.html?v=24" style="color:#1d4ed8;font-weight:700;text-decoration:none">☁ Conectar con el Drive</a><br><br>
     Los datos se guardan en este equipo y, si está conectado, se sincronizan con la planilla del Drive.
   </div>
 
-<script src="usuario.js?v=23"></script>
-<script src="lotes-tarpuy.js?v=23" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=23" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=23"></script>
-<script src="hojas.js?v=23"></script>
-<script src="nube.js?v=23"></script>
+<script src="usuario.js?v=24"></script>
+<script src="lotes-tarpuy.js?v=24" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=24" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=24"></script>
+<script src="hojas.js?v=24"></script>
+<script src="nube.js?v=24"></script>
 <script>
 (function () {
   "use strict";
@@ -144,23 +144,23 @@
   }
 
   const MODULOS = {
-    recorrer: { href: "recorrer.html?v=23", ico: "🗺️", color: "#15803d", titulo: "Recorrer y recetar",
+    recorrer: { href: "recorrer.html?v=24", ico: "🗺️", color: "#15803d", titulo: "Recorrer y recetar",
       desc: "El mapa de los campos. Mirá qué se le aplicó a cada lote, elegí uno o varios y armá la orden de trabajo." },
-    mapa: { href: "recorrer.html?v=23", ico: "🗺️", color: "#15803d", titulo: "Mapa",
+    mapa: { href: "recorrer.html?v=24", ico: "🗺️", color: "#15803d", titulo: "Mapa",
       desc: "Los lotes con órdenes pendientes marcados en el mapa, para ubicarse en el campo." },
-    pendientes: { href: "stock.html?v=23#pend", ico: "📋", color: "#1d4ed8", titulo: "Órdenes pendientes",
+    pendientes: { href: "stock.html?v=24#pend", ico: "📋", color: "#1d4ed8", titulo: "Órdenes pendientes",
       desc: (u) => u.rol === "equipo"
         ? "Las órdenes de " + (u.zona === "NORTE" ? "El Mistol y La Iluminada" : "Lajitas") + " para aplicar: retirar el producto y reportar la aplicación."
         : u.rol === "encargado"
         ? "Las órdenes de " + (u.zona === "NORTE" ? "El Mistol y La Iluminada" : "Lajitas") + ": confirmar las aplicaciones reportadas y la devolución del remanente."
         : "Las órdenes emitidas que todavía no se cerraron, y en qué paso está cada una." },
-    stock: { href: "stock.html?v=23#stock", ico: "📦", color: "#b45309", titulo: "Stock",
+    stock: { href: "stock.html?v=24#stock", ico: "📦", color: "#b45309", titulo: "Stock",
       desc: (u) => u.rol === "gerente"
         ? "Primero lo que está en tránsito; después las existencias por depósito y los envases abiertos."
         : "Existencias por depósito, lo que está en tránsito y los envases abiertos." },
-    compras: { href: "stock.html?v=23#stock", ico: "📦", color: "#b45309", titulo: "Stock y compras",
+    compras: { href: "stock.html?v=24#stock", ico: "📦", color: "#b45309", titulo: "Stock y compras",
       desc: "Existencias por depósito, compras repartidas entre depósitos, lo que está por llegar y los movimientos." },
-    presupuesto: { href: "presupuesto.html?v=23", ico: "📊", color: "#7c3aed", titulo: "Presupuesto",
+    presupuesto: { href: "presupuesto.html?v=24", ico: "📊", color: "#7c3aed", titulo: "Presupuesto",
       desc: "Qué cultivo va en cada lote, cómo se maneja y cuánto cuesta: por producto, por lote y por ha." },
   };
   const MENU = {
