@@ -86,13 +86,15 @@
   function filaMovimiento(S, m) {
     var cant = CON_SIGNO[m.tipo] ? m.cant : (SIGNO[m.tipo] || 0) * m.cant;
     var resto = {};
-    ["link", "compra", "zona", "otId", "ref", "verificadoPor", "fechaVerificacion", "aporta", "sub"].forEach(function (k) { if (m[k] !== undefined && m[k] !== "") resto[k] = m[k]; });
+    ["link", "compra", "zona", "otId", "ref", "verificadoPor", "fechaVerificacion", "aporta", "sub", "proveedor", "confirmadoPor", "fechaConfirmacion"].forEach(function (k) { if (m[k] !== undefined && m[k] !== "") resto[k] = m[k]; });
     return {
       "Fecha": m.fecha || "", "Tipo": TIPO_TXT[m.tipo] || m.tipo, "Producto": nombreProd(S, m.prod),
       "Depósito": nombreDep(S, m.deposito), "Cantidad": r3(cant), "Unidad": unidadDe(S, m.prod),
       "Envase": m.sub === "abierto" ? "Rincón" : "Cerrado", "OT": m.otId ? numeroOT(S, m.otId) : "",
       "Remito": m.tipo === "remito" ? (m.ref || "") : "",
       "Verificado": m.tipo === "compra" ? (m.verificado === false ? "No" : "Sí") : "",
+      // Pedido al socio (Lartirigoyen): cuenta como compra recién cuando él lo confirma
+      "Confirmado": m.confirmado === false ? "No" : m.proveedor ? "Sí" : "",
       "Precio US$": m.precio ? r3(m.precio) : "", "Nota": m.nota || "", "Usuario": m.usuario || "",
       "Anulado": "", "datos": JSON.stringify(resto),
     };
@@ -108,10 +110,12 @@
       cant: CON_SIGNO[tipo] ? c : Math.abs(c), precio: num(f["Precio US$"]), nota: f["Nota"] || "", usuario: f["Usuario"] || "",
     };
     m.sub = slug(f["Envase"]) === "rincon" ? "abierto" : (d.sub === "abierto" && !f["Envase"] ? "abierto" : "cerrado");
-    ["link", "compra", "zona", "ref", "verificadoPor", "fechaVerificacion", "aporta"].forEach(function (k) { if (d[k] !== undefined) m[k] = d[k]; });
+    ["link", "compra", "zona", "ref", "verificadoPor", "fechaVerificacion", "aporta", "proveedor", "confirmadoPor", "fechaConfirmacion"].forEach(function (k) { if (d[k] !== undefined) m[k] = d[k]; });
     m.otId = f["OT"] ? (otPorNumero(S, f["OT"]) || d.otId || "") : (d.otId || "");
     if (tipo === "remito" && f["Remito"]) m.ref = f["Remito"];
     if (tipo === "compra") m.verificado = !/^no$/i.test(String(f["Verificado"] || "").trim());
+    if (/^no$/i.test(String(f["Confirmado"] || "").trim())) m.confirmado = false;
+    else if (si(f["Confirmado"])) m.confirmado = true;
     return m;
   }
 
@@ -267,12 +271,27 @@
     return o;
   }
 
+  // ── Planificación (cultivo por lote) ──────────────────────────────────
+  function filaPlan(p) {
+    return { "Zona": p.zona || "", "Campo": p.campo || "", "Lote": p.lote || "", "ha": p.ha ? r3(p.ha) : "",
+             "Cultivo": p.cultivo || "", "Variedad": p.variedad || "", "En el mapa": p.loteId ? "Sí" : "No",
+             "Observaciones": p.obs || "", "Anulado": "" };
+  }
+  function planDeFila(S, id, f) {
+    var lote = String(f["Lote"] || "").trim();
+    var l = (S.lotes || []).find(function (y) { return slug(y.nombre) === slug(lote); }) ||
+            (Array.isArray(g.LOTES) ? g.LOTES.find(function (y) { return slug(y.nombre) === slug(lote); }) : null);
+    return { id: id, zona: f["Zona"] || "", campo: f["Campo"] || "", lote: lote, ha: num(f["ha"]), cultivo: String(f["Cultivo"] || "").trim(),
+             variedad: f["Variedad"] || "", obs: f["Observaciones"] || "", loteId: l ? l.id : "" };
+  }
+
   // ── API ───────────────────────────────────────────────────────────────
-  var TABLAS = ["Productos", "Depósitos", "Campos", "Movimientos", "OT", "OT_Productos"];
+  var TABLAS = ["Productos", "Depósitos", "Campos", "Movimientos", "OT", "OT_Productos", "Planificación"];
 
   /** El estado del stock como filas de la planilla: {tabla: {id: valores}}. */
   function filas(S) {
-    var out = { "Productos": {}, "Depósitos": {}, "Campos": {}, "Movimientos": {}, "OT": {}, "OT_Productos": {} };
+    var out = { "Productos": {}, "Depósitos": {}, "Campos": {}, "Movimientos": {}, "OT": {}, "OT_Productos": {}, "Planificación": {} };
+    (S.planificacion || []).forEach(function (p) { out["Planificación"][p.id] = filaPlan(p); });
     (S.catalogo || []).forEach(function (p) { out["Productos"][p.id] = filaProducto(p); });
     (S.depositos || []).forEach(function (d) { out["Depósitos"][d.id] = filaDeposito(d); });
     var soc = S.camposSociedad || [];
@@ -297,7 +316,7 @@
    * productos que no cambiaron. Devuelve los ids de OT reconstruidas.
    */
   function aplicar(S, entrantes, actuales) {
-    ["depositos", "catalogo", "movimientos", "ordenes", "lotes"].forEach(function (k) { if (!Array.isArray(S[k])) S[k] = []; });
+    ["depositos", "catalogo", "movimientos", "ordenes", "lotes", "planificacion"].forEach(function (k) { if (!Array.isArray(S[k])) S[k] = []; });
     // Los lotes son los del mapa: hacen falta para entender «EM10 (68 ha)»
     if (!S.lotes.length && Array.isArray(g.LOTES)) {
       S.lotes = g.LOTES.map(function (l) { return { id: l.id, nombre: l.nombre, campo: l.campo, ha: l.ha, cultivo: "" }; });
@@ -350,6 +369,10 @@
       });
       var lista = Object.keys(prods).map(function (pid) { return { id: pid, f: prods[pid] }; });
       reemplazar(S.ordenes, otId, otDeFilas(S, otId, cab, lista, previa));
+    });
+    Object.keys(E("Planificación")).forEach(function (id) {
+      var f = E("Planificación")[id];
+      reemplazar(S.planificacion, id, f ? planDeFila(S, id, f) : null);
     });
     Object.keys(E("Movimientos")).forEach(function (id) {
       var f = E("Movimientos")[id];

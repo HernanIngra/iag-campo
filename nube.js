@@ -20,7 +20,8 @@
   // ── Datos de la empresa ───────────────────────────────────────────────
   var ARCHIVOS = [
     { nombre: "lotes-tarpuy", globales: ["LOTES_META", "LOTES"], falta: "LOTES_FALTA" },
-    { nombre: "aplicaciones-tarpuy", globales: ["APLIC_META", "APLIC_DIC", "APLICACIONES", "APLIC_GRUPOS"], falta: "APLIC_FALTA" },
+    // APLICACIONES primero: APLIC_META puede venir de campos-tarpuy.js (la parte pública)
+    { nombre: "aplicaciones-tarpuy", globales: ["APLICACIONES", "APLIC_META", "APLIC_DIC", "APLIC_GRUPOS"], falta: "APLIC_FALTA" },
     { nombre: "presupuesto-tarpuy", globales: ["PRESUPUESTO_BASE"], falta: "PRESUPUESTO_FALTA" },
   ];
   var claveArchivo = function (n) { return "iag_archivo_" + n; };
@@ -332,30 +333,14 @@
   }
 
   // ── Arranque ──────────────────────────────────────────────────────────
-  function cartel(html) {
-    var d = document.createElement("div");
-    d.style.cssText = "position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,-apple-system,sans-serif";
-    d.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px 24px;max-width:420px;text-align:center;font-size:15px;color:#0f172a;line-height:1.5">' + html + "</div>";
-    document.body.appendChild(d);
-    return d;
-  }
 
   document.addEventListener("DOMContentLoaded", function () {
     pintarEstado();
-    if (necesarios.length) {
-      if (!config()) {
-        cartel("<b>Faltan los datos de la empresa</b><br>Esta copia de la app todavía no está conectada al Drive." +
-          '<br><br><a href="conectar.html" style="color:#1d4ed8;font-weight:700">Conectar →</a>');
-      } else if (!navigator.onLine) {
-        cartel("<b>Faltan los datos de la empresa</b><br>Hace falta señal una vez para bajarlos del Drive. Después anda sin señal.");
-      } else {
-        var c = cartel("<b>Bajando los datos de la empresa del Drive…</b><br>Es una sola vez: después quedan en este equipo.");
-        bajarArchivos(necesarios).then(function () { location.reload(); }).catch(function (e) {
-          c.firstChild.innerHTML = "<b>No se pudieron bajar los datos</b><br>" + String(e.message || e) +
-            '<br><br><a href="conectar.html" style="color:#1d4ed8;font-weight:700">Revisar la conexión →</a>';
-        });
-      }
-      return;
+    // Lo que falta (historial, presupuesto base) no frena la página: el mapa y
+    // las órdenes andan igual. Si el equipo está conectado, se baja en segundo
+    // plano y se recarga una vez; si no, la pastilla avisa que falta conectar.
+    if (necesarios.length && config() && navigator.onLine) {
+      bajarArchivos(necesarios).then(function () { location.reload(); }).catch(function () { /* se reintenta la próxima vez */ });
     }
     sincronizar();
   });

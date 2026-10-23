@@ -10,6 +10,8 @@ agrega a mano en la planilla aparece en la app** (en un minuto, aprox.).
 | Pestaña | Una fila por | Qué se hace a mano |
 |---|---|---|
 | **Movimientos** | Cada entrada o salida de un depósito | Cargar el **stock previo** (Tipo «Stock inicial»), corregir cantidades, ajustes |
+| **Stock** | Cada producto (columnas: depósitos) | Nada: son **fórmulas** sobre Movimientos, se recalcula solo |
+| **Planificación** | Cada lote, campaña 26-27 | Cultivo y variedad de cada lote hasta la siembra |
 | **OT** | Cada orden de trabajo | Cargar **órdenes ya ejecutadas** (Estado «Aplicada»), corregir datos |
 | **OT_Productos** | Cada producto de cada orden | Los productos de esas órdenes |
 | **Productos** | Cada producto | Envase, unidad, mínimo |
@@ -31,10 +33,19 @@ programa: no se tocan. La columna **datos** (oculta) tampoco.
 | Envase | Cerrado o Rincón (envase abierto) |
 | OT · Remito | La orden y el remito, si corresponde |
 | Verificado | En compras: Sí / No (si alguien la vio en el galpón) |
+| Confirmado | Pedidos a Lartirigoyen: **No** hasta que el socio lo confirma (es como un presupuesto; la confirmación es la factura). Mientras diga No, **no suma al stock**. Se tilda en la app (Stock → «Pedidos a Lartirigoyen sin confirmar») o se pone Sí acá |
 
-Con una **tabla dinámica** sobre esta pestaña (filas: Producto · columnas:
-Depósito · valores: suma de Cantidad, filtrando Anulado vacío) sale el stock
-de cada depósito y el total.
+### Stock
+
+La arma el programa con fórmulas `QUERY` sobre Movimientos: una fila por
+producto, una columna por depósito y el total. No cuenta lo anulado ni los
+pedidos sin confirmar. No se escribe a mano.
+
+### Planificación
+
+Zona · Campo · Lote · ha · Cultivo · Variedad. «En el mapa» = No para lotes
+que no están dibujados (Banquinas, EG7 a EG11). La app usa el cultivo para
+pintar el mapa y para proponer el cultivo de la orden.
 
 ### OT · estados
 
@@ -69,8 +80,20 @@ Drive* de la app, o lo pasa quien ya está conectado). Queda conectado y baja
 solo los datos de la empresa. Abajo a la izquierda se ve el estado:
 *Sincronizado 10:42*, *3 cambios por subir*, *Sin señal*.
 
-## Cosas a saber
+## Cosas a saber · fase de prueba
 
+- **La página es pública.** El código de la app está en un servidor gratuito de
+  GitHub (GitHub Pages), abierto: cualquiera puede ver la página y su código,
+  incluido el dibujo de los lotes. **Los datos no están ahí.**
+- **Lo que no es abierto es la planilla de Google.** Movimientos, órdenes, stock,
+  historial y presupuesto viven sólo en la planilla de Drive; para leerlos o
+  escribirlos hace falta el enlace con la clave.
+- **Este sprint se enfoca en la orden de trabajo (OT).** El resto (stock,
+  compras, presupuesto) ya se puede probar, pero por eso **una OT se puede
+  ejecutar aunque el producto no figure comprado en el stock**: la app avisa
+  el saldo negativo y no bloquea.
+- Esto es para la **prueba**. Si se adopta, se pasa a un servidor y una base
+  de datos propios, con usuario y contraseña por persona.
 - Quien tiene el enlace (con la clave) puede leer y escribir. Para la prueba alcanza.
 - Si dos personas cambian la misma fila a la vez, queda la última.
 - El historial y el presupuesto base viven en la pestaña `_archivos` (no se toca).

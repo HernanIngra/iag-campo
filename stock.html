@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=10">← Inicio</a>
+  <a class="back" href="index.html?v=11">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -529,6 +529,17 @@
         </div>
       </div>
       <div id="transito-zonas"></div>
+    </div>
+
+    <div class="block c2" id="blk-confirmar">
+      <div class="block-header">
+        <div class="block-num">✓</div>
+        <div>
+          <div class="block-title">Pedidos a Lartirigoyen sin confirmar</div>
+          <div class="block-sub">Lo que aporta el socio. Como una cotización: entra al stock recién cuando él lo confirma (equivale a la factura)</div>
+        </div>
+      </div>
+      <div id="confirmar-lista"></div>
     </div>
 
     <div class="block c1" id="blk-verificar">
@@ -897,17 +908,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=10"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=10"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=10"></script>
-<script src="lotes-tarpuy.js?v=10" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=10" onerror="window.APLIC_FALTA=true"></script>
-<script src="senasa-catalogo.js?v=10" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=10" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=11"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=11"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=11"></script>
+<script src="lotes-tarpuy.js?v=11" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=11" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=11"></script>
+<script src="senasa-catalogo.js?v=11" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=11" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=10" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=10"></script>
-<script src="nube.js?v=10"></script>
+<script src="semillas-catalogo.js?v=11" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=11"></script>
+<script src="nube.js?v=11"></script>
 
 <script>
 (function () {
@@ -1154,6 +1166,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       else if (!d.zona) d.zona = zona;
     });
     S.remitoSeq = S.remitoSeq || 1;
+    if (!Array.isArray(S.planificacion)) S.planificacion = [];
     // "Por llegar" (no contaba en el stock) pasó a "sin verificar" (cuenta, con un
     // tilde pendiente). Las compras viejas ya recibidas se dan por verificadas.
     (S.movimientos || []).forEach((m) => {
@@ -1870,6 +1883,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       if (m.prod !== prodId) return acc;
       if (depositoId && m.deposito !== depositoId) return acc;
       if (sub && (m.sub || "cerrado") !== sub) return acc;
+      // Pedido al socio todavía sin confirmar: es una cotización, no stock
+      if (m.confirmado === false) return acc;
       if (CON_SIGNO_PROPIO[m.tipo]) return acc + m.cant;
       return acc + signo(m.tipo) * m.cant;
     }, 0);
@@ -2140,6 +2155,25 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     return OT.lotes.reduce((a, l) => a + num(l.ha), 0);
   }
 
+  /** El cultivo planificado de un lote (pestaña Planificación de la planilla). */
+  const planDe = (loteId) => (S.planificacion || []).find((p) => p.loteId === loteId && p.cultivo);
+  /** «Maíz+brachiaria», «Maiz/Braquiaria» → «Maíz» (las opciones de la orden). */
+  function cultivoDeOT(c) {
+    const t = sinAcentos(c);
+    if (/maiz/.test(t)) return "Maíz";
+    if (/soja/.test(t)) return "Soja";
+    if (/trigo/.test(t)) return "Trigo";
+    if (/poroto/.test(t)) return "Poroto";
+    if (/girasol/.test(t)) return "Girasol";
+    if (/sorgo/.test(t)) return "Sorgo";
+    if (/garbanzo/.test(t)) return "Garbanzo";
+    const op = Array.from($("ot-cultivo").options).map((o) => o.value);
+    if (op.indexOf(c) === -1) {   // mungo, chía…: se suma a la lista
+      const o = document.createElement("option"); o.textContent = c; $("ot-cultivo").appendChild(o);
+    }
+    return c;
+  }
+
   // Campo abierto en el selector de lotes de la orden
   let CAMPO_OT = "";
 
@@ -2184,7 +2218,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         <input type="checkbox" ${sel ? "checked" : ""} data-check="${l.id}" />
         <span class="lote-info">
           <span class="lote-name">${esc(l.nombre)}</span>
-          <span class="lote-meta">${fmt(l.ha, 1)} ha${l.cultivo ? " · " + esc(l.cultivo) : ""}</span>
+          <span class="lote-meta">${fmt(l.ha, 1)} ha${planDe(l.id) ? " · " + esc(planDe(l.id).cultivo) : l.cultivo ? " · " + esc(l.cultivo) : ""}</span>
           ${parcial ? `<span class="lote-parcial">parcial: ${fmt(num(sel.ha), 1)} de ${fmt(l.ha, 1)} ha</span>` : ""}
         </span>
         <span class="lote-ha">${sel ? `<input type="number" value="${sel.ha}" min="0" step="0.1" data-ha="${l.id}" />` : ""}</span>
@@ -2204,6 +2238,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         const id = cb.dataset.check;
         if (cb.checked) OT.lotes.push({ loteId: id, ha: loteById(id).ha, nota: "" });
         else OT.lotes = OT.lotes.filter((x) => x.loteId !== id);
+        // El cultivo de la orden sale de la planificación, si todos los lotes coinciden
+        const cults = Array.from(new Set(OT.lotes.map((x) => (planDe(x.loteId) || {}).cultivo).filter(Boolean)));
+        if (cults.length === 1 && !OT.cultivoAMano) OT.cultivo = cultivoDeOT(cults[0]);
         renderOT();
       });
     });
@@ -2487,6 +2524,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-num").value = OT.numero;
     $("ot-fecha").value = OT.fecha;
     $("ot-campania").value = OT.campania;
+    if (OT.cultivo) cultivoDeOT(OT.cultivo);   // que exista la opción (mungo, chía…)
     $("ot-cultivo").value = OT.cultivo;
     $("ot-responsable").value = OT.responsable;
     $("ot-labor").value = OT.labor;
@@ -3547,7 +3585,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (!filas.length) {
       $("stock-body").innerHTML = `<tr><td colspan="${colsDep.length + 7}" class="empty">Sin productos que coincidan.</td></tr>`;
       $("stock-foot").innerHTML = "";
-      renderStockKPIs(); renderTransito(); renderAbiertos(); renderVerificar();
+      renderStockKPIs(); renderTransito(); renderAbiertos(); renderVerificar(); renderConfirmar();
       return;
     }
 
@@ -3597,7 +3635,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }));
 
     renderStockKPIs();
-    renderTransito(); renderAbiertos(); renderVerificar();
+    renderTransito(); renderAbiertos(); renderVerificar(); renderConfirmar();
   }
 
   /**
@@ -3683,7 +3721,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   function renderVerificar() {
     const cont = $("verificar-lista");
     if (!cont) return;
-    const lista = S.movimientos.filter((m) => m.tipo === "compra" && m.verificado === false);
+    const lista = S.movimientos.filter((m) => m.tipo === "compra" && m.verificado === false && m.confirmado !== false);
     if (!lista.length) { cont.innerHTML = '<div class="empty">Todas las compras están verificadas.</div>'; return; }
     cont.innerHTML = `<div class="tbl-scroll"><table>
       <thead><tr><th style="width:44px">✓</th><th>Producto</th><th>Depósito</th><th>Zona</th><th class="num">Cantidad</th><th>Comprado</th></tr></thead>
@@ -3700,6 +3738,43 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         </tr>`;
       }).join("")}</tbody></table></div>`;
     cont.querySelectorAll("[data-tilde]").forEach((c) => c.addEventListener("change", () => { if (c.checked) verificarCompra(c.dataset.tilde); }));
+  }
+
+  /**
+   * Pedidos al socio (Lartirigoyen) sin confirmar. El tilde es su
+   * confirmación: recién ahí el producto cuenta como stock.
+   */
+  function renderConfirmar() {
+    const cont = $("confirmar-lista");
+    if (!cont) return;
+    const lista = S.movimientos.filter((m) => m.tipo === "compra" && m.confirmado === false);
+    $("blk-confirmar").style.display = lista.length ? "" : "none";
+    if (!lista.length) { cont.innerHTML = ""; return; }
+    const ok = puede("comprar");
+    cont.innerHTML = `<div class="tbl-scroll"><table>
+      <thead><tr><th style="width:44px">✓</th><th>Producto</th><th class="num">Cantidad</th><th>Depósito</th><th>Pedido</th><th>Nota</th></tr></thead>
+      <tbody>${lista.map((m) => {
+        const p = prodById(m.prod), d = depById(m.deposito);
+        return `<tr>
+          <td><input type="checkbox" data-confirmar="${m.id}" style="width:auto;transform:scale(1.3)" ${ok ? "" : "disabled title=\"Lo confirma Oficina o el gerente\""} /></td>
+          <td><strong>${esc(p ? p.marca : "?")}</strong></td>
+          <td class="num">${fmt(m.cant, 2)} ${p ? unidadLabel(p, m.cant) : ""}</td>
+          <td>${esc(d ? d.nombre : "—")}</td>
+          <td style="white-space:nowrap">${esc(m.fecha)}</td>
+          <td style="font-size:12px;color:#64748b">${esc(m.nota || "")}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+    cont.querySelectorAll("[data-confirmar]").forEach((c) => c.addEventListener("change", () => {
+      if (!c.checked) return;
+      const m = S.movimientos.find((x) => x.id === c.dataset.confirmar);
+      if (!m) return;
+      m.confirmado = true;
+      m.fechaConfirmacion = hoy();
+      m.confirmadoPor = (usuarioActual() || {}).id || "";
+      save(); renderAll();
+      const p = prodById(m.prod);
+      toast("Confirmado por el socio: " + fmt(m.cant, 2) + " de " + (p ? p.marca : "") + " — ya cuenta en el stock");
+    }));
   }
 
   /** Rincón: el substock de envases abiertos, por depósito. */
@@ -3958,7 +4033,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         <td style="color:#64748b">${d ? esc(d.nombre) : "—"}</td>
         <td class="num" style="color:${color};font-weight:700">${cant > 0 ? "+" : ""}${fmt(cant, 2)} ${p ? unidadLabel(p, cant) : ""}</td>
         <td class="num" style="color:#64748b">${total ? "$" + fmt(total, 0) : "—"}</td>
-        <td style="font-size:12px;color:#64748b">${m.tipo === "compra" && m.verificado === false ? '<span class="badge b-amber" style="margin-right:5px">sin verificar</span>' : ""}${m.sub === "abierto" ? '<span class="badge b-amber" style="margin-right:5px">Rincón</span>' : ""}${esc(m.ref ? m.ref + " · " : "")}${esc(m.nota || "")}</td>
+        <td style="font-size:12px;color:#64748b">${m.confirmado === false ? '<span class="badge b-red" style="margin-right:5px">sin confirmar (socio)</span>' : m.tipo === "compra" && m.verificado === false ? '<span class="badge b-amber" style="margin-right:5px">sin verificar</span>' : ""}${m.sub === "abierto" ? '<span class="badge b-amber" style="margin-right:5px">Rincón</span>' : ""}${esc(m.ref ? m.ref + " · " : "")}${esc(m.nota || "")}</td>
         <td style="white-space:nowrap">${
           m.tipo === "compra" && m.verificado === false ? `<button class="link" data-mv-verificar="${m.id}" style="font-weight:800">✓ Verificar</button>` : ""
         }${(m.tipo === "uso" || m.tipo === "apertura" || m.tipo === "remito" || m.tipo === "retorno")
@@ -4303,6 +4378,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
              "ot-responsable": "responsable", "ot-labor": "labor", "ot-obs": "obs", "ot-aporta": "aporta" }[id]] = e.target.value;
         // La labor decide si se muestran caldo y tanques
         if (id === "ot-labor") renderOTTotales();
+        if (id === "ot-cultivo") OT.cultivoAMano = true;   // elegido a mano: la planificación ya no lo cambia
       });
     });
 
@@ -4401,7 +4477,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=10");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=11");
   load();
   vincularConRegistro();
   nuevaOT();

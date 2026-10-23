@@ -6,11 +6,12 @@
  * dirección con una clave compartida. Ver drive/LEEME.md.
  *
  * Pestañas que crea solo (si no existen):
- *   Movimientos · OT · OT_Productos · Productos · Depósitos · Campos
+ *   Movimientos · OT · OT_Productos · Planificación · Productos · Depósitos · Campos
  *       Tablas para leer y editar a mano. Las columnas se buscan por nombre:
  *       se pueden reordenar o agregar columnas propias. Las dos últimas,
  *       «id» y «rev», las maneja este programa: no se tocan.
  *       Para borrar una fila, poner «Sí» en «Anulado» (no borrar la fila).
+ *   Stock        se calcula solo con fórmulas a partir de Movimientos. No se edita.
  *   _registros   uso interno de la app (presupuesto, pedidos). No se toca.
  *   _archivos    datos de la empresa que no van a GitHub. No se toca.
  *
@@ -23,11 +24,12 @@ const CLAVE = "cambiar-esta-clave";
 
 const TABLAS = {
   "Movimientos": ["Fecha", "Tipo", "Producto", "Depósito", "Cantidad", "Unidad", "Envase", "OT", "Remito",
-                  "Verificado", "Precio US$", "Nota", "Usuario", "Anulado", "datos", "id", "rev"],
+                  "Verificado", "Confirmado", "Precio US$", "Nota", "Usuario", "Anulado", "datos", "id", "rev"],
   "OT": ["OT", "Fecha", "Estado", "Zona", "Lotes", "ha", "Cultivo", "Labor", "Aplicador", "Aporta",
          "Remito", "Fecha aplicación", "ha aplicadas", "Observaciones", "Usuario", "Anulado", "datos", "id", "rev"],
   "OT_Productos": ["OT", "Producto", "Dosis", "Unidad dosis", "Necesidad", "Retirado", "Usado", "Dosis real",
                    "Devuelto", "Sale de", "Anulado", "datos", "id", "rev"],
+  "Planificación": ["Zona", "Campo", "Lote", "ha", "Cultivo", "Variedad", "En el mapa", "Observaciones", "Anulado", "id", "rev"],
   "Productos": ["Producto", "Principio activo", "Tipo", "Unidad", "Envase", "Mínimo", "Registro SENASA", "Anulado", "datos", "id", "rev"],
   "Depósitos": ["Depósito", "Zona", "Tipo", "Ubicación", "Anulado", "id", "rev"],
   "Campos": ["Campo", "Código", "Zona", "En sociedad", "id", "rev"],
@@ -87,12 +89,46 @@ function respuesta_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+/**
+ * Pestaña Stock: fórmulas sobre Movimientos (una tabla por depósito y el
+ * total por producto). Se rearma sola si cambia el orden de las columnas.
+ * No cuenta lo anulado ni los pedidos al socio sin confirmar.
+ */
+function stock_() {
+  const mov = tabla_("Movimientos");
+  const enc = encabezado_(mov);
+  const L = (c) => { const i = enc.indexOf(c); return i < 0 ? null : columnaLetra_(i + 1); };
+  const P = L("Producto"), D = L("Depósito"), C = L("Cantidad"), A = L("Anulado"), K = L("Confirmado");
+  if (!P || !D || !C) return;
+  const ultima = columnaLetra_(enc.length);
+  const filtro = P + " is not null" + (A ? " and (" + A + " is null or " + A + " <> 'Sí')" : "") +
+                 (K ? " and (" + K + " is null or " + K + " <> 'No')" : "");
+  const rango = "Movimientos!A1:" + ultima;
+  let h = libro_().getSheetByName("Stock");
+  if (!h) h = libro_().insertSheet("Stock");
+  const porDep = '=QUERY(' + rango + ',"select ' + P + ', sum(' + C + ') where ' + filtro + ' group by ' + P + ' pivot ' + D + '",1)';
+  const total = '=QUERY(' + rango + ',"select ' + P + ', sum(' + C + ') where ' + filtro + ' group by ' + P + ' label sum(' + C + ') \'Total\'",1)';
+  if (h.getRange("A3").getFormula() !== porDep || h.getRange("O3").getFormula() !== total) {
+    h.clear();
+    h.getRange("A1").setValue("Stock por depósito · se calcula solo a partir de Movimientos (no se edita)").setFontWeight("bold");
+    h.getRange("O1").setValue("Total por producto").setFontWeight("bold");
+    h.getRange("A3").setFormula(porDep);
+    h.getRange("O3").setFormula(total);
+    h.setFrozenRows(3);
+  }
+}
+function columnaLetra_(n) { let s = ""; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+
 // ── Lectura ──────────────────────────────────────────────────────────────
 function doGet(e) {
   const p = e.parameter || {};
   if (p.clave !== CLAVE) return respuesta_({ ok: false, error: "clave" });
 
-  if (p.accion === "probar") return respuesta_({ ok: true, planilla: libro_().getName(), version: 2 });
+  if (p.accion === "probar") {
+    Object.keys(TABLAS).forEach(tabla_);
+    stock_();
+    return respuesta_({ ok: true, planilla: libro_().getName(), version: 3 });
+  }
 
   if (p.accion === "archivo") {
     const filas = archivos_().getDataRange().getValues().slice(1)
@@ -181,6 +217,7 @@ function doPost(e) {
       });
       const hr = registros_();
       if (regs.length) hr.getRange(hr.getLastRow() + 1, 1, regs.length, 7).setNumberFormat("@").setValues(regs);
+      if (porTabla["Movimientos"]) stock_();
       return respuesta_({ ok: true, rev: rev });
     }
 
