@@ -1,46 +1,77 @@
-# Conectar I.Ag con el Drive
+# La planilla de I.Ag
 
-La app guarda todo en cada equipo y lo sincroniza con **una planilla de Google** en
-tu Drive, a través de un Apps Script (un programa chico dentro de la planilla).
-La app no inicia sesión en Google: le habla al Apps Script con una clave.
+La app guarda todo en cada equipo y lo sincroniza con una planilla de Google, a
+través de un programa chico dentro de la planilla (Apps Script, `Code.gs`).
+Lo que se carga en la app aparece en la planilla, y **lo que se corrige o se
+agrega a mano en la planilla aparece en la app** (en un minuto, aprox.).
 
-## Una sola vez: armar la planilla (5 minutos)
+## Pestañas
 
-1. En drive.google.com: **Nuevo → Hojas de cálculo de Google**. Ponele de nombre
-   `I.Ag · datos`.
-2. En la planilla: **Extensiones → Apps Script**.
-3. Borrá lo que aparece y pegá todo el contenido de [`Code.gs`](Code.gs).
-4. En la línea `const CLAVE = "cambiar-esta-clave";` poné una clave tuya
-   (por ejemplo, tres palabras: `soja-mistol-2027`). Guardá (ícono del disquete).
-5. **Implementar → Nueva implementación**. En el engranaje elegí **Aplicación web**.
-   - Ejecutar como: **Yo**
-   - Quién tiene acceso: **Cualquier persona**
-6. **Implementar**. Google pide autorizar: elegí tu cuenta → *Configuración avanzada*
-   → *Ir a (no seguro)* → *Permitir*. Es tu propio script.
-7. Copiá la **URL de la aplicación web** (termina en `/exec`).
+| Pestaña | Una fila por | Qué se hace a mano |
+|---|---|---|
+| **Movimientos** | Cada entrada o salida de un depósito | Cargar el **stock previo** (Tipo «Stock inicial»), corregir cantidades, ajustes |
+| **OT** | Cada orden de trabajo | Cargar **órdenes ya ejecutadas** (Estado «Aplicada»), corregir datos |
+| **OT_Productos** | Cada producto de cada orden | Los productos de esas órdenes |
+| **Productos** | Cada producto | Envase, unidad, mínimo |
+| **Depósitos** | Cada depósito | Zona y tipo |
+| **Campos** | Cada campo | «En sociedad»: Sí / No |
 
-## En la Mac
+Las dos últimas columnas de cada pestaña, **id** y **rev**, las completa el
+programa: no se tocan. La columna **datos** (oculta) tampoco.
 
-1. Abrí la app con `servir.command` y entrá a **Conectar con el Drive**
-   (al pie del inicio).
-2. Pegá la URL y la clave → **Guardar y probar**. Tiene que decir
-   «Conectado a la planilla I.Ag · datos».
-3. **Subir los datos de este equipo al Drive**: sube lotes, historial y presupuesto
-   base (no van a GitHub).
-4. Copiá el **enlace para conectar otro equipo** y mandalo por WhatsApp.
+### Movimientos
 
-## En los otros equipos
+| Columna | Qué va |
+|---|---|
+| Fecha | `2026-10-20` |
+| Tipo | Stock inicial · Compra · Traslado · Retiro para aplicar · Aplicado · Devolución · Ajuste · Venta · Reingreso al Rincón |
+| Producto | El nombre, igual que en Productos (si es nuevo, se crea) |
+| Depósito | El Mistol · Lartirigoyen · Siner · NECA · Barracón · METAGRI · Agrolajitas · En tránsito |
+| Cantidad | **Con signo**: `+` entra al depósito, `−` sale. Un traslado son dos filas (− en uno, + en el otro) |
+| Envase | Cerrado o Rincón (envase abierto) |
+| OT · Remito | La orden y el remito, si corresponde |
+| Verificado | En compras: Sí / No (si alguien la vio en el galpón) |
 
-Abren el enlace. Queda conectado, baja los datos de la empresa una vez y desde ahí
-sincroniza solo. Abajo a la izquierda se ve el estado: *Sincronizado 10:42*,
-*3 cambios por subir*, *Sin señal*…
+Con una **tabla dinámica** sobre esta pestaña (filas: Producto · columnas:
+Depósito · valores: suma de Cantidad, filtrando Anulado vacío) sale el stock
+de cada depósito y el total.
+
+### OT · estados
+
+**Solicitada** → **Producto retirado** → **Aplicada** → **Remanente devuelto**
+
+Una orden ya ejecutada antes de usar la app se carga con Estado «Aplicada»,
+los lotes como `EM10 (68 ha), EM11` y sus productos en OT_Productos (misma
+OT). No mueve stock: se supone que el stock previo ya lo descuenta.
+
+### Reglas
+
+- **No borrar filas.** Para sacar algo, poner **Sí** en la columna **Anulado**.
+- Las columnas se buscan por nombre: se pueden reordenar o agregar columnas propias.
+- Los nombres (productos, depósitos, lotes) tienen que coincidir con los de la app.
+  Mayúsculas y acentos no importan.
+
+## Armar la planilla (una vez)
+
+1. En la planilla: **Extensiones → Apps Script**. Pegar todo `Code.gs` y poner
+   la clave en `const CLAVE = "…"`. Guardar.
+2. **Implementar → Nueva implementación → Aplicación web**. Ejecutar como: **Yo** ·
+   Acceso: **Cualquier persona**. Autorizar.
+3. Copiar la URL (termina en `/exec`).
+
+**Si se cambia `Code.gs`:** Implementar → **Administrar implementaciones** → lápiz
+→ Versión: **Nueva versión** → Implementar. Así la URL sigue siendo la misma.
+
+## Conectar los equipos
+
+Cada equipo abre el **enlace para conectar** (lo arma la página *Conectar con el
+Drive* de la app, o lo pasa quien ya está conectado). Queda conectado y baja
+solo los datos de la empresa. Abajo a la izquierda se ve el estado:
+*Sincronizado 10:42*, *3 cambios por subir*, *Sin señal*.
 
 ## Cosas a saber
 
-- **Quien tiene el enlace (con la clave) puede leer y escribir.** Para la prueba alcanza;
-  para producción, ver el plan (Cloudflare Access).
-- La hoja `registros` nunca se edita: cada cambio es una fila nueva. Se puede mirar,
-  pero **no la toques a mano**.
-- Si cambiás `Code.gs`: **Implementar → Administrar implementaciones → editar →
-  Versión: nueva**. Así la URL no cambia.
-- Si cambiás la clave, hay que volver a conectar todos los equipos (nuevo enlace).
+- Quien tiene el enlace (con la clave) puede leer y escribir. Para la prueba alcanza.
+- Si dos personas cambian la misma fila a la vez, queda la última.
+- El historial y el presupuesto base viven en la pestaña `_archivos` (no se toca).
+  El presupuesto editado y los pedidos, en `_registros` (tampoco).

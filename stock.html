@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=7">← Inicio</a>
+  <a class="back" href="index.html?v=8">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -570,6 +570,7 @@
           <label class="fl">Tipo</label>
           <select id="mv-tipo">
             <option value="compra">Compra (+)</option>
+            <option value="inicial">Stock inicial (+)</option>
             <option value="venta">Venta (−)</option>
             <option value="ajuste_pos">Ajuste de entrada (+)</option>
             <option value="ajuste_neg">Merma / ajuste de salida (−)</option>
@@ -666,6 +667,7 @@
           <select id="mov-filtro-tipo">
             <option value="">Todos</option>
             <option value="compra">Compra</option>
+            <option value="inicial">Stock inicial</option>
             <option value="venta">Venta</option>
             <option value="remito">Remito de salida</option>
             <option value="retorno">Retorno</option>
@@ -796,7 +798,7 @@
           <div class="block-sub">En producción se sincronizan con los lotes del Recorredor</div>
         </div>
         <span class="spacer"></span>
-        <button class="btn btn-primary btn-sm" id="add-lote">+ Lote</button>
+        <span style="font-size:12px;color:#94a3b8">Los 92 lotes del mapa de Tarpuy · no se editan desde la app</span>
       </div>
       <div class="tbl-scroll">
         <table>
@@ -892,16 +894,17 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=7"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=7"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=7"></script>
-<script src="lotes-tarpuy.js?v=7" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=7" onerror="window.APLIC_FALTA=true"></script>
-<script src="senasa-catalogo.js?v=7" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=7" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=8"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=8"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=8"></script>
+<script src="lotes-tarpuy.js?v=8" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=8" onerror="window.APLIC_FALTA=true"></script>
+<script src="senasa-catalogo.js?v=8" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=8" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=7" onerror="window.INASE_FALTA=true"></script>
-<script src="nube.js?v=7"></script>
+<script src="semillas-catalogo.js?v=8" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=8"></script>
+<script src="nube.js?v=8"></script>
 
 <script>
 (function () {
@@ -1094,12 +1097,12 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   const MOV_LABEL = {
     compra: "Compra", venta: "Venta", uso: "Uso (OT)",
     ajuste_pos: "Ajuste +", ajuste_neg: "Merma −", transferencia: "Transferencia",
-    apertura: "Apertura", remito: "Remito de salida", retorno: "Retorno", rincon: "Reingreso al Rincón",
+    apertura: "Apertura", remito: "Remito de salida", retorno: "Retorno", rincon: "Reingreso al Rincón", inicial: "Stock inicial",
   };
   const MOV_BADGE = {
     compra: "b-green", venta: "b-blue", uso: "b-amber",
     ajuste_pos: "b-gray", ajuste_neg: "b-red", transferencia: "b-purple",
-    apertura: "b-amber", remito: "b-blue", retorno: "b-green", rincon: "b-amber",
+    apertura: "b-amber", remito: "b-blue", retorno: "b-green", rincon: "b-amber", inicial: "b-gray",
   };
 
   // ── Estado ─────────────────────────────────────────────────────────────
@@ -1847,7 +1850,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   const loteById = (id) => S.lotes.find((l) => l.id === id);
 
   function signo(tipo) {
-    return (tipo === "compra" || tipo === "ajuste_pos" || tipo === "rincon") ? 1
+    return (tipo === "compra" || tipo === "ajuste_pos" || tipo === "rincon" || tipo === "inicial") ? 1
          : (tipo === "venta" || tipo === "uso" || tipo === "ajuste_neg") ? -1
          : 0; // transferencia y apertura llevan el signo en cada pata
   }
@@ -3856,33 +3859,19 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }));
   }
 
+  /** Los lotes son los del mapa de Tarpuy: se muestran, no se crean ni se editan. */
   function renderLotesConfig() {
     const body = $("lote-body");
-    body.innerHTML = S.lotes.map((l) => `<tr>
-      <td><input type="text" value="${esc(l.nombre)}" data-lt-nombre="${l.id}" /></td>
-      <td><input type="text" value="${esc(l.campo || "")}" data-lt-campo="${l.id}" /></td>
-      <td class="num"><input type="number" min="0" step="0.1" value="${l.ha}" data-lt-ha="${l.id}" style="text-align:right" /></td>
-      <td><input type="text" value="${esc(l.cultivo || "")}" data-lt-cultivo="${l.id}" /></td>
-      <td><button class="link del" data-lt-del="${l.id}">Borrar</button></td>
+    const lista = lotesElegibles().slice().sort((a, b) => nombreCampo(a.campo).localeCompare(nombreCampo(b.campo)) || porNombre(a, b));
+    body.innerHTML = lista.map((l) => `<tr>
+      <td><strong>${esc(l.nombre)}</strong></td>
+      <td>${esc(nombreCampo(l.campo))}</td>
+      <td class="num">${fmt(l.ha, 1)}</td>
+      <td style="color:#94a3b8">${esc(l.cultivo || "")}</td>
+      <td></td>
     </tr>`).join("") || '<tr><td colspan="5" class="empty">Sin lotes.</td></tr>';
-
-    const bind = (attr, campo, esNum) => body.querySelectorAll("[" + attr + "]").forEach((i) => {
-      i.addEventListener("change", () => {
-        const id = i.getAttribute(attr);
-        const l = loteById(id);
-        if (l) { l[campo] = esNum ? num(i.value) : i.value; save(); renderAll(); }
-      });
-    });
-    bind("data-lt-nombre", "nombre"); bind("data-lt-campo", "campo");
-    bind("data-lt-ha", "ha", true);   bind("data-lt-cultivo", "cultivo");
-
-    body.querySelectorAll("[data-lt-del]").forEach((b) => b.addEventListener("click", () => {
-      const id = b.dataset.ltDel;
-      S.lotes = S.lotes.filter((l) => l.id !== id);
-      if (OT) OT.lotes = OT.lotes.filter((x) => x.loteId !== id);
-      save(); renderAll();
-    }));
   }
+
 
   function renderSenasa() {
     const est = $("senasa-estado");
@@ -4222,9 +4211,6 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("mv-add-dep").addEventListener("click", () => formularioDeposito({}, (dep) => {
       $("mv-dep").value = dep.id;
     }));
-    $("add-lote").addEventListener("click", () => {
-      S.lotes.push({ id: uid(), nombre: "Nuevo lote", campo: "", ha: 0, cultivo: "" }); save(); renderAll();
-    });
     $("add-prod-cat").addEventListener("click", () => formularioProducto({ tipo: "Semilla" }));
     ["cat-buscar", "cat-filtro-tipo"].forEach((id) => $(id).addEventListener("input", renderCatalogo));
     ["senasa-buscar", "senasa-tipo"].forEach((id) => $(id).addEventListener("input", renderSenasa));
@@ -4260,7 +4246,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=7");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=8");
   load();
   vincularConRegistro();
   nuevaOT();

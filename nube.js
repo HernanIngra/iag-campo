@@ -13,8 +13,8 @@
   "use strict";
 
   var CONFIG = "iag_nube";            // {url, clave}
-  var BASE = "iag_nube_base";         // {clave localStorage: {tabla: {id: json}}} — lo último en común con el Drive
-  var REV = "iag_nube_rev";           // última revisión bajada
+  var BASE = "iag_nube_base2";         // {clave localStorage: {tabla: {id: json}}} — lo último en común con el Drive
+  var REV = "iag_nube_rev";           // + "_" + clave: última revisión bajada para esa clave
   var ULTIMA = "iag_nube_ultima";     // fecha de la última sincronización buena
 
   // ── Datos de la empresa ───────────────────────────────────────────────
@@ -104,37 +104,44 @@
       if (valor === null) delete o[id]; else o[id] = valor;
     },
   };
-  var CONFIG_STOCK = ["camposSociedad", "otSeq", "remitoSeq", "idsEstables"];
-  var unico = {   // los datos sueltos de configuración, como un solo registro
-    sacar: function (estado) { var v = {}; CONFIG_STOCK.forEach(function (k) { if (estado[k] !== undefined) v[k] = estado[k]; }); return { general: v }; },
-    poner: function (estado, prop, id, valor) { if (valor) CONFIG_STOCK.forEach(function (k) { if (valor[k] !== undefined) estado[k] = valor[k]; }); },
-  };
-
+  // Stock: las pestañas legibles de la planilla (hojas.js). Sólo en las
+  // páginas que tienen lo necesario para traducirlas (los lotes y el
+  // historial, que dicen la zona de cada campo); en las demás no se toca.
+  // Presupuesto y pedidos: registros internos (_registros), como JSON.
   var CLAVES = {
     iag_stock_v2: {
-      "stock.depositos": { prop: "depositos", t: porId("id") },
-      "stock.lotes": { prop: "lotes", t: porId("id") },
-      "stock.catalogo": { prop: "catalogo", t: porId("id") },
-      "stock.movimientos": { prop: "movimientos", t: porId("id") },
-      "stock.ordenes": { prop: "ordenes", t: porId("id") },
-      "stock.pedidos": { prop: "pedidos", t: porId("id") },
-      "stock.config": { prop: null, t: unico },
+      disponible: function () { return !!(g.IAgHojas && g.APLIC_META && Array.isArray(g.LOTES)); },
+      hojas: true,
+      json: { "stock.pedidos": { prop: "pedidos", t: porId("id") } },
     },
     iag_presupuesto_v1: {
-      "pres.lotes": { prop: "lotes", t: porId("uid") },
-      "pres.modelos": { prop: "modelos", t: mapa },
-      "pres.precios": { prop: "precios", t: mapa },
-      "pres.siembra": { prop: "siembra", t: mapa },
+      disponible: function () { return true; },
+      json: {
+        "pres.lotes": { prop: "lotes", t: porId("uid") },
+        "pres.modelos": { prop: "modelos", t: mapa },
+        "pres.precios": { prop: "precios", t: mapa },
+        "pres.siembra": { prop: "siembra", t: mapa },
+      },
     },
   };
   var claveDeTabla = {};
-  Object.keys(CLAVES).forEach(function (k) { Object.keys(CLAVES[k]).forEach(function (t) { claveDeTabla[t] = k; }); });
+  Object.keys(CLAVES).forEach(function (k) { Object.keys(CLAVES[k].json).forEach(function (t) { claveDeTabla[t] = k; }); });
+  var esHoja = function (t) { return !!(g.IAgHojas && g.IAgHojas.TABLAS.indexOf(t) !== -1); };
+  var disponibles = function () { return Object.keys(CLAVES).filter(function (k) { return CLAVES[k].disponible(); }); };
+  var cursor = function (k) { return Number(leer(REV + "_" + k) || 0); };
 
-  /** {tabla: {id: json}} del estado guardado en una clave. */
+  /** {tabla: {id: json}} del estado de una clave: filas de la planilla y registros. */
   function foto(k, estado) {
     var out = {};
-    Object.keys(CLAVES[k]).forEach(function (t) {
-      var def = CLAVES[k][t];
+    if (CLAVES[k].hojas) {
+      var f = g.IAgHojas.filas(estado);
+      Object.keys(f).forEach(function (t) {
+        var o = out[t] = {};
+        Object.keys(f[t]).forEach(function (id) { o[id] = JSON.stringify(f[t][id]); });
+      });
+    }
+    Object.keys(CLAVES[k].json).forEach(function (t) {
+      var def = CLAVES[k].json[t];
       var regs = def.t.sacar(def.prop ? estado[def.prop] : estado);
       var o = out[t] = {};
       Object.keys(regs).forEach(function (id) { o[id] = JSON.stringify(regs[id]); });
@@ -142,17 +149,28 @@
     return out;
   }
 
+  /** ¿La fila que llegó de la planilla es la misma que este equipo ya tiene? */
+  function igual(json, remoto) {
+    if (!json || !remoto) return false;
+    var a = JSON.parse(json);
+    return Object.keys(a).every(function (c) {
+      var x = a[c], y = remoto[c] === undefined || remoto[c] === null ? "" : remoto[c];
+      if (typeof x === "number" || typeof y === "number") return Math.abs(Number(x || 0) - Number(y || 0)) < 1e-6 && String(x) !== "" === (String(y) !== "");
+      return String(x) === String(y);
+    });
+  }
+
   /** Cambios de este equipo que todavía no están en el Drive. */
   function pendientes() {
     var base = leer(BASE) || {}, n = 0, regs = [];
-    Object.keys(CLAVES).forEach(function (k) {
+    disponibles().forEach(function (k) {
       var estado = leer(k);
       if (!estado) return;
       var cur = foto(k, estado), b = base[k] || {};
       Object.keys(cur).forEach(function (t) {
         var bt = b[t] || {};
         Object.keys(cur[t]).forEach(function (id) {
-          if (cur[t][id] !== bt[id]) { n++; regs.push({ k: k, tabla: t, id: id, valor: JSON.parse(cur[t][id]), json: cur[t][id] }); }
+          if (cur[t][id] !== bt[id]) { n++; regs.push({ k: k, tabla: t, id: id, json: cur[t][id] }); }
         });
         Object.keys(bt).forEach(function (id) {
           if (!(id in cur[t])) { n++; regs.push({ k: k, tabla: t, id: id, borrado: true }); }
@@ -167,46 +185,81 @@
 
   /**
    * Una vuelta: primero se baja lo de los demás y después se sube lo propio.
-   * Lo bajado no pisa un registro que este equipo cambió y todavía no subió
-   * (lo propio gana y se sube enseguida), salvo en la primera sincronización
-   * de una clave: ahí el Drive manda, para no subir los datos de arranque de
+   * Lo bajado no pisa una fila que este equipo cambió y todavía no subió (lo
+   * propio gana y se sube enseguida), salvo en la primera sincronización de
+   * una clave: ahí la planilla manda, para no subir los datos de arranque de
    * un equipo nuevo encima de lo que ya cargaron los demás.
    */
   function sincronizar() {
     if (!config()) { pintarEstado(); return Promise.resolve(); }
     if (enCurso) return enCurso;
     if (!navigator.onLine) { pintarEstado(); return Promise.resolve(); }
-    var desde = Number(leer(REV) || 0);
+    var claves = disponibles();
+    // Se vuelve a pedir un margen de dos minutos: lo que se editó a mano justo
+    // mientras se leía no se pierde (aplicar dos veces lo mismo no cambia nada)
+    var desde = Math.max(0, Math.min.apply(null, claves.map(cursor)) - 120000);
     enCurso = pedir({ accion: "cambios", desde: desde }).then(function (r) {
       if (!r.ok) throw new Error(r.error === "clave" ? "clave incorrecta" : r.error);
       var base = leer(BASE) || {};
-      var ultimos = {};
-      r.registros.forEach(function (x) { ultimos[x.tabla + "\u0001" + x.id] = x; });
-      var tocadas = {}, estados = {}, fotos = {}, primeras = {};
-      Object.keys(ultimos).forEach(function (kk) {
-        var x = ultimos[kk], k = claveDeTabla[x.tabla];
-        if (!k) return;
-        if (!estados[k]) {
-          primeras[k] = !base[k];
-          estados[k] = leer(k) || {};
-          fotos[k] = foto(k, estados[k]);
+      var tocadas = {};
+      claves.forEach(function (k) {
+        var estado = leer(k) || {};
+        var primera = !base[k];
+        var b = base[k] = base[k] || {};
+        var cur = foto(k, estado);
+        var cambio = false;
+
+        // Registros internos (JSON)
+        var ultimos = {};
+        (r.registros || []).forEach(function (x) { if (claveDeTabla[x.tabla] === k) ultimos[x.tabla + "\u0001" + x.id] = x; });
+        Object.keys(ultimos).forEach(function (kk) {
+          var x = ultimos[kk], bt = b[x.tabla] = b[x.tabla] || {}, ct = cur[x.tabla] || {};
+          if (bt[x.id] === (x.borrado ? undefined : x.json)) return;          // ya está
+          if (!primera && ct[x.id] !== bt[x.id]) return;                     // cambio propio sin subir: gana
+          var def = CLAVES[k].json[x.tabla];
+          def.t.poner(estado, def.prop, x.id, x.borrado ? null : JSON.parse(x.json));
+          if (x.borrado) delete bt[x.id]; else bt[x.id] = x.json;
+          cambio = true;
+        });
+
+        // Filas de las pestañas
+        if (CLAVES[k].hojas) {
+          var ultimasF = {};
+          (r.filas || []).forEach(function (x) { if (esHoja(x.tabla)) ultimasF[x.tabla + "\u0001" + x.id] = x; });
+          var entrantes = {}, hay = false;
+          Object.keys(ultimasF).forEach(function (kk) {
+            var x = ultimasF[kk], bt = b[x.tabla] = b[x.tabla] || {}, ct = cur[x.tabla] || {};
+            var anulada = g.IAgHojas.anulada(x.valores);
+            if (anulada ? !(x.id in ct) && !(x.id in bt) : igual(bt[x.id], x.valores) && ct[x.id] === bt[x.id]) return;
+            if (!primera && x.tabla in cur && ct[x.id] !== bt[x.id]) return;
+            (entrantes[x.tabla] = entrantes[x.tabla] || {})[x.id] = anulada ? null : x.valores;
+            hay = true;
+          });
+          if (hay) {
+            var antes = g.IAgHojas.filas(estado);
+            var otIds = g.IAgHojas.aplicar(estado, entrantes, antes);
+            var despues = g.IAgHojas.filas(estado);
+            // Base = cómo queda cada fila tocada, vista desde este equipo
+            var poner = function (t, id) {
+              var bt = b[t] = b[t] || {};
+              if (despues[t] && despues[t][id]) bt[id] = JSON.stringify(despues[t][id]); else delete bt[id];
+            };
+            Object.keys(entrantes).forEach(function (t) { Object.keys(entrantes[t]).forEach(function (id) { poner(t, id); }); });
+            var numeros = {};
+            otIds.forEach(function (id) {
+              poner("OT", id);
+              [antes, despues].forEach(function (f) { if (f["OT"] && f["OT"][id]) numeros[f["OT"][id]["OT"]] = true; });
+            });
+            [antes, despues].forEach(function (f) {
+              Object.keys(f["OT_Productos"] || {}).forEach(function (id) { if (numeros[f["OT_Productos"][id]["OT"]]) poner("OT_Productos", id); });
+            });
+            cambio = true;
+          }
         }
-        var b = base[k] = base[k] || {}, bt = b[x.tabla] = b[x.tabla] || {};
-        var cur = fotos[k][x.tabla] = fotos[k][x.tabla] || {};
-        var localCambio = !primeras[k] && cur[x.id] !== bt[x.id];
-        if (!localCambio) {
-          var def = CLAVES[k][x.tabla];
-          def.t.poner(estados[k], def.prop, x.id, x.borrado ? null : JSON.parse(x.json));
-          if (x.borrado) delete cur[x.id]; else cur[x.id] = x.json;
-          tocadas[k] = true;
-        }
-        if (x.borrado) delete bt[x.id]; else bt[x.id] = x.json;
+        if (cambio) { escribir(k, estado); tocadas[k] = true; }
+        escribir(REV + "_" + k, Math.max(cursor(k), Number(r.rev) || 0));
       });
-      Object.keys(tocadas).forEach(function (k) { escribir(k, estados[k]); });
-      // Una clave con base vacía queda marcada como sincronizada aunque el Drive no tuviera nada
-      Object.keys(CLAVES).forEach(function (k) { if (!base[k] && leer(k)) base[k] = {}; });
       escribir(BASE, base);
-      escribir(REV, r.rev);
       Object.keys(tocadas).forEach(function (k) { (avisar[k] || []).forEach(function (fn) { try { fn(); } catch (e) { /* la página se arregla sola al recargar */ } }); });
       return subir();
     }).then(function () {
@@ -223,11 +276,12 @@
     var p = pendientes();
     if (!p.n) return Promise.resolve();
     var u = g.IAgUsuario && g.IAgUsuario.actual();
-    var ahora = new Date().toISOString();
-    return enviar({
-      accion: "guardar", usuario: u ? u.id : "",
-      registros: p.regs.map(function (x) { return { tabla: x.tabla, id: x.id, valor: x.valor, borrado: !!x.borrado, actualizado: ahora }; }),
-    }).then(function (r) {
+    var filas = [], registros = [];
+    p.regs.forEach(function (x) {
+      if (esHoja(x.tabla)) filas.push(x.borrado ? { tabla: x.tabla, id: x.id, anulado: true } : { tabla: x.tabla, id: x.id, valores: JSON.parse(x.json) });
+      else registros.push({ tabla: x.tabla, id: x.id, valor: x.borrado ? null : JSON.parse(x.json), borrado: !!x.borrado });
+    });
+    return enviar({ accion: "guardar", usuario: u ? u.id : "", filas: filas, registros: registros }).then(function (r) {
       if (!r.ok) throw new Error(r.error === "clave" ? "clave incorrecta" : r.error);
       var base = leer(BASE) || {};
       p.regs.forEach(function (x) {
@@ -235,7 +289,6 @@
         if (x.borrado) delete bt[x.id]; else bt[x.id] = x.json;
       });
       escribir(BASE, base);
-      escribir(REV, Math.max(Number(leer(REV) || 0), r.rev));
     });
   }
 
