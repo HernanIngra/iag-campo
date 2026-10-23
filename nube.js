@@ -349,7 +349,7 @@
     }
     // Al pasar de una página a otra no se vuelve a preguntar si se sincronizó
     // hace menos de medio minuto: la página abre con lo que ya tiene el equipo
-    var hace = Date.now() - (Date.parse(leer(ULTIMA) || "") || 0);
+    var hace = Date.now() - (Date.parse(localStorage.getItem(ULTIMA) || "") || 0);
     if (hace < 30000 && !pendientes().n) pintarEstado();
     else sincronizar();
   });
