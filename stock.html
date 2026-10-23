@@ -246,7 +246,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=21" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=22" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -926,18 +926,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=21"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=21"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=21"></script>
-<script src="lotes-tarpuy.js?v=21" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=21" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=21"></script>
-<script src="senasa-catalogo.js?v=21" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=21" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=22"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=22"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=22"></script>
+<script src="lotes-tarpuy.js?v=22" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=22" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=22"></script>
+<script src="senasa-catalogo.js?v=22" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=22" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=21" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=21"></script>
-<script src="nube.js?v=21"></script>
+<script src="semillas-catalogo.js?v=22" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=22"></script>
+<script src="nube.js?v=22"></script>
 
 <script>
 (function () {
@@ -2312,7 +2312,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       <input type="checkbox" ${sel ? "checked" : ""} data-check="${l.id}" />
       <span class="lote-info">
         <span class="lote-name">${esc(l.nombre)}</span>
-        <span class="lote-meta">${fmt(l.ha, 1)} ha${planDe(l.id) ? " · " + esc(planDe(l.id).cultivo) : l.cultivo ? " · " + esc(l.cultivo) : ""}</span>
+        <span class="lote-meta">${l.sinMapa || (!num(l.ha) && /BANQ$/.test(l.nombre)) ? "banquinas · cargar las ha" : fmt(l.ha, 1) + " ha"}${planDe(l.id) ? " · " + esc(planDe(l.id).cultivo) : l.cultivo ? " · " + esc(l.cultivo) : ""}</span>
         ${parcial ? `<span class="lote-parcial">parcial: ${fmt(num(sel.ha), 1)} de ${fmt(l.ha, 1)} ha</span>` : ""}
       </span>
       <span class="lote-ha">${sel ? `<input type="number" value="${sel.ha}" min="0" step="0.1" data-ha="${l.id}" />` : ""}</span>
@@ -4605,7 +4605,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=21");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=22");
   load();
   vincularConRegistro();
   nuevaOT();

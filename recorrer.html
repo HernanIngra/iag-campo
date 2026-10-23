@@ -138,7 +138,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=21" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=22" title="Volver al inicio">⌂ Inicio</a>
   <h1>Recorrer</h1>
   <span class="info" id="info-campos"></span>
   <span class="sp"></span>
@@ -147,7 +147,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=21" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=22" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -186,13 +186,13 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=21"></script>
-<script src="usuario.js?v=21"></script>
-<script src="lotes-tarpuy.js?v=21" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=21" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=21"></script>
-<script src="hojas.js?v=21"></script>
-<script src="nube.js?v=21"></script>
+<script src="vendor/leaflet/leaflet.js?v=22"></script>
+<script src="usuario.js?v=22"></script>
+<script src="lotes-tarpuy.js?v=22" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=22" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=22"></script>
+<script src="hojas.js?v=22"></script>
+<script src="nube.js?v=22"></script>
 <script>
 (function () {
   "use strict";
@@ -207,7 +207,34 @@
   const _aplicCache = {};
 
   /** Aplicaciones de un lote, ya descomprimidas y ordenadas de nueva a vieja. */
+  /**
+   * Lo aplicado en un lote: el historial (archivo de la empresa) más las
+   * órdenes de la app ya aplicadas (o reportadas), lo más nuevo primero.
+   */
   function aplicacionesDe(loteId) {
+    const todas = historialDe(loteId).concat(deOrdenes(loteId));
+    return todas.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  }
+  function deOrdenes(loteId) {
+    let S = null;
+    try { S = JSON.parse(localStorage.getItem("iag_stock_v2") || "null"); } catch (e) { S = null; }
+    if (!S || !Array.isArray(S.ordenes)) return [];
+    const prod = (id) => (S.catalogo || []).find((p) => p.id === id) || {};
+    const out = [];
+    S.ordenes.filter((o) => (o.estado === "aplicada" || o.estado === "reportada") && !o.prueba).forEach((o) => {
+      const l = (o.lotes || []).find((x) => x.loteId === loteId);
+      if (!l) return;
+      (o.items || []).filter((it) => it.prod).forEach((it) => {
+        const p = prod(it.prod);
+        const dosis = Number(it.dosisReal || it.dosis) || 0;
+        out.push({ fecha: o.fechaAplicacion || o.fecha || "", cultivo: o.cultivo || "", producto: p.marca || "?",
+                   tipo: p.tipo || "", dosis, unidad: String(it.unidad || "").replace(/\/ha$/i, ""),
+                   total: dosis * (Number(l.ha) || 0), sup: Number(l.ha) || 0, real: true, ot: o.numero });
+      });
+    });
+    return out;
+  }
+  function historialDe(loteId) {
     if (_aplicCache[loteId]) return _aplicCache[loteId];
     const crudo = APLIC[loteId];
     if (!crudo) return [];
@@ -392,7 +419,8 @@
       if (!ls.length) return;
       ls.forEach((l) => camposVisibles.add(l.campo));
       aplicarVisibilidad(); renderChips(); renderLista();
-      mapa.fitBounds(L.latLngBounds(ls.flatMap((l) => l.anillos[0].map((p) => [p[1], p[0]]))), { padding: [60, 60] });
+      const pts = ls.filter((l) => l.anillos && l.anillos.length).flatMap((l) => l.anillos[0].map((p) => [p[1], p[0]]));
+      if (pts.length) mapa.fitBounds(L.latLngBounds(pts), { padding: [60, 60] });
     }));
   }
 
@@ -429,6 +457,7 @@
   }
 
   LOTES.forEach((l) => {
+    if (!l.anillos || !l.anillos.length) return;     // sin dibujo (banquinas): sólo en la lista
     // Leaflet quiere [lat, lon]; el shapefile guarda [lon, lat]
     const anillos = l.anillos.map((a) => a.map((p) => [p[1], p[0]]));
 
@@ -466,7 +495,7 @@
     if (capaDe[id]) capaDe[id].setStyle(estilo(l));
     if (realceDe[id]) realceDe[id].setStyle(estiloRealce(l));
     // El lote elegido va adelante, para que su contorno no quede tapado
-    if (seleccion.has(id) && capaDe[id].bringToFront) capaDe[id].bringToFront();
+    if (seleccion.has(id) && capaDe[id] && capaDe[id].bringToFront) capaDe[id].bringToFront();
   }
 
   function renderResumen() {
@@ -531,7 +560,7 @@
         else if (mapa.hasLayer(cap)) mapa.removeLayer(cap);
       });
     });
-    const vis = LOTES.filter(visible);
+    const vis = LOTES.filter((l) => visible(l) && l.anillos && l.anillos.length);
     if (vis.length) {
       mapa.fitBounds(L.latLngBounds(vis.flatMap((l) => l.anillos.flatMap((a) => a.map((p) => [p[1], p[0]])))), { padding: [30, 30] });
     }
@@ -561,7 +590,7 @@
         <input type="checkbox" ${on ? "checked" : ""} data-chk="${l.id}" />
         <span class="pt" style="background:${colorLote(l)}"></span>
         <span class="nm">${esc(l.nombre)}${cultivoDe(l.id) ? ` <span style="font-weight:600;font-size:11px;color:#94a3b8">${esc(cultivoDe(l.id))}</span>` : ""}</span>
-        <span class="ha">${fmt(l.ha)} ha</span>
+        <span class="ha">${l.sinMapa ? "sin mapa" : fmt(l.ha) + " ha"}</span>
       </div>`;
     });
     $("lista").innerHTML = html;
@@ -569,7 +598,7 @@
     $("lista").querySelectorAll("[data-lote]").forEach((f) => f.addEventListener("click", (e) => {
       const l = LOTES.find((x) => x.id === f.dataset.lote);
       if (e.target.dataset.chk === undefined) {
-        mapa.fitBounds(capaDe[l.id].getBounds(), { padding: [60, 60] });
+        if (capaDe[l.id]) mapa.fitBounds(capaDe[l.id].getBounds(), { padding: [60, 60] });
         mostrarFicha(l);
       }
       alternar(l.id);
@@ -584,7 +613,7 @@
     const ap = aplicacionesDe(l.id);
     $("ficha-nombre").textContent = l.nombre;
     $("ficha-campo").textContent = l.campo + (cultivoDe(l.id) ? " · " + cultivoDe(l.id) : "");
-    $("ficha-ha").textContent = fmt(l.ha) + " ha";
+    $("ficha-ha").textContent = l.sinMapa ? (l.detalle || "") + " · sin mapa, superficie a definir en cada orden" : fmt(l.ha) + " ha";
     const plan = cultivoPlan(l.id);
     $("ficha-cultivo").textContent = plan ? plan + " (plan 26-27)" : cultivoDe(l.id) || "—";
     $("ficha-ult").textContent = ap.length ? fechaCorta([ap[0].fecha]) : "—";
@@ -609,7 +638,7 @@
     const vis = fichaTipo ? ap.filter((x) => x.tipo === fichaTipo) : ap;
     if (!vis.length) {
       $("ficha-lista").innerHTML = '<div style="padding:16px 0;color:#94a3b8;font-size:12.5px;text-align:center">' +
-        (APLIC_META.aplicaciones ? "Sin aplicaciones para ese filtro." : "Sin historia cargada.") + "</div>";
+        (fichaTipo ? "Sin aplicaciones para ese filtro." : APLIC_META.aplicaciones ? "Sin aplicaciones registradas." : "Sin aplicaciones en la app (el historial anterior todavía no se cargó).") + "</div>";
       return;
     }
     const dias = agruparPorDia(vis);
@@ -628,6 +657,7 @@
             ${x.dosis ? fmt(x.dosis, 2) + " " + esc(x.unidad) + "/ha" : ""}
             ${x.total ? " · " + fmt(x.total, 1) + " " + esc(x.unidad) : ""}
             ${x.real ? "" : ' · <span style="color:#b45309;font-weight:700">presupuesto</span>'}
+            ${x.ot ? ' · <span style="color:#15803d;font-weight:700">' + esc(x.ot) + "</span>" : ""}
           </div>
         </div>`).join("")}
       </div>`;
@@ -719,7 +749,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=21";
+    window.location.href = "stock.html?v=22";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -734,7 +764,7 @@
       marcaYo = L.circleMarker(ll, { radius: 8, color: "#fff", weight: 3, fillColor: "#1d4ed8", fillOpacity: 1 }).addTo(mapa);
       mapa.setView(ll, 15);
       // ¿Estoy parado dentro de algún lote?
-      const dentro = LOTES.find((l) => enPoligono(pos.coords.longitude, pos.coords.latitude, l.anillos[0]));
+      const dentro = LOTES.find((l) => l.anillos && l.anillos.length && enPoligono(pos.coords.longitude, pos.coords.latitude, l.anillos[0]));
       if (dentro) { mostrarFicha(dentro); aviso("Estás en el lote " + dentro.nombre); }
     }, () => {
       $("btn-ubic").textContent = "📍 Mi ubicación";
@@ -761,7 +791,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=21");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=22");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length
