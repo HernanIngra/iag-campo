@@ -87,7 +87,7 @@
     var cant = CON_SIGNO[m.tipo] ? m.cant : (SIGNO[m.tipo] || 0) * m.cant;
     var resto = {};
     ["link", "compra", "zona", "otId", "ref", "verificadoPor", "fechaVerificacion", "aporta", "sub", "proveedor", "confirmadoPor", "fechaConfirmacion"].forEach(function (k) { if (m[k] !== undefined && m[k] !== "") resto[k] = m[k]; });
-    return {
+    return Object.assign({
       "Fecha": m.fecha || "", "Tipo": TIPO_TXT[m.tipo] || m.tipo, "Producto": nombreProd(S, m.prod),
       "Depósito": nombreDep(S, m.deposito), "Cantidad": r3(cant), "Unidad": unidadDe(S, m.prod),
       "Envase": m.sub === "abierto" ? "Rincón" : "Cerrado", "OT": m.otId ? numeroOT(S, m.otId) : "",
@@ -97,7 +97,18 @@
       "Confirmado": m.confirmado === false ? "No" : m.confirmado === true || m.proveedor ? "Sí" : "",
       "Precio US$": m.precio ? r3(m.precio) : "", "Nota": m.nota || "", "Usuario": m.usuario || "",
       "Anulado": "", "datos": JSON.stringify(resto),
-    };
+    }, prueba(m.prueba !== undefined ? m.prueba : ordenDe(S, m.otId).prueba));
+  }
+  /**
+   * Columna «Prueba»: órdenes ficticias, cargadas para probar la app, y sus
+   * movimientos. Se limpian juntas después. Sólo aparece si se marcó (o
+   * desmarcó): así las filas de siempre no cambian.
+   */
+  function prueba(v) { return v === undefined ? {} : { "Prueba": v ? "Sí" : "No" }; }
+  function ordenDe(S, id) {
+    if (!id) return {};
+    for (var i = 0; i < (S.ordenes || []).length; i++) if (S.ordenes[i].id === id) return S.ordenes[i];
+    return {};
   }
   function movimientoDeFila(S, id, f) {
     var d = datosDe(f.datos);
@@ -116,6 +127,7 @@
     if (tipo === "compra") m.verificado = !/^no$/i.test(String(f["Verificado"] || "").trim());
     if (/^no$/i.test(String(f["Confirmado"] || "").trim())) m.confirmado = false;
     else if (si(f["Confirmado"])) m.confirmado = true;
+    if (si(f["Prueba"])) m.prueba = true;
     return m;
   }
 
@@ -202,14 +214,14 @@
   function filaOT(S, o) {
     var resto = {};
     OT_DATOS.forEach(function (k) { if (o[k] !== undefined) resto[k] = o[k]; });
-    return {
+    return Object.assign({
       "OT": o.numero, "Fecha": o.fecha || "", "Estado": estadoTxt(o), "Zona": zonaDe(S, o), "Lotes": lotesTxt(S, o),
       "ha": r3((o.lotes || []).reduce(function (a, x) { return a + num(x.ha); }, 0)),
       "Cultivo": o.cultivo || "", "Labor": o.labor || "", "Aplicador": o.responsable || "", "Aporta": o.aporta || "",
       "Remito": o.remito ? o.remito.numero : "", "Fecha aplicación": o.fechaAplicacion || "",
       "ha aplicadas": o.haReal ? r3(o.haReal) : "", "Observaciones": o.obs || "", "Usuario": o.usuario || "",
       "Anulado": "", "datos": JSON.stringify(resto),
-    };
+    }, prueba(o.prueba));
   }
   function idItem(o, it, i) {
     if (it._fila) return it._fila;          // fila cargada a mano en la planilla: conserva su id
@@ -251,6 +263,8 @@
     o.cultivo = f["Cultivo"] || ""; o.labor = f["Labor"] || o.labor || ""; o.responsable = f["Aplicador"] || "";
     o.aporta = f["Aporta"] || ""; o.obs = f["Observaciones"] || ""; o.usuario = f["Usuario"] || o.usuario || "";
     o.fechaAplicacion = f["Fecha aplicación"] || "";
+    if (si(f["Prueba"])) o.prueba = true;
+    else if (/^no$/i.test(String(f["Prueba"] || "").trim())) o.prueba = false;
     o.haReal = f["ha aplicadas"] !== "" && f["ha aplicadas"] !== undefined ? num(f["ha aplicadas"]) : o.haReal;
     if (f["Remito"]) o.remito = Object.assign({}, o.remito || {}, { numero: String(f["Remito"]) });
     if (o.mojado === undefined) o.mojado = 80;

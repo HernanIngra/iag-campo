@@ -53,6 +53,20 @@ Una orden es de **una sola zona**: no mezcla lotes del Norte y de Lajitas (la
 app ni deja tocar «Recetar»). Juanjo receta en las dos zonas, en órdenes
 separadas; Rubén sólo en Lajitas y Ramiro sólo en el Norte.
 
+### Órdenes de prueba
+
+Tilde **«Orden de prueba (ficticia)»** en la orden: queda **Prueba = Sí** en
+OT y en todos sus movimientos (el PDF dice «ORDEN DE PRUEBA · NO APLICAR»).
+Mientras tanto mueven el stock como una real. Para limpiarlas todas juntas:
+`python tools/limpiar_pruebas.py --url … --clave …` (muestra qué haría) y con
+`--aplicar` les pone Anulado = Sí.
+
+### Velocidad
+
+Cada consulta a la planilla tarda unos segundos (servidor gratuito de Google).
+El programa recuerda cuándo fue el último cambio: si no hubo novedades,
+contesta enseguida sin leer las pestañas.
+
 ### OT · estados
 
 **Solicitada** → **Producto retirado** → **Aplicación reportada** (por el equipo) → **Aplicada** (confirmada por el encargado) → **Remanente devuelto**

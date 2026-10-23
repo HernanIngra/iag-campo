@@ -24,9 +24,9 @@ const CLAVE = "cambiar-esta-clave";
 
 const TABLAS = {
   "Movimientos": ["Fecha", "Tipo", "Producto", "Depósito", "Cantidad", "Unidad", "Envase", "OT", "Remito",
-                  "Verificado", "Confirmado", "Precio US$", "Nota", "Usuario", "Anulado", "datos", "id", "rev"],
+                  "Verificado", "Confirmado", "Precio US$", "Nota", "Usuario", "Prueba", "Anulado", "datos", "id", "rev"],
   "OT": ["OT", "Fecha", "Estado", "Zona", "Lotes", "ha", "Cultivo", "Labor", "Aplicador", "Aporta",
-         "Remito", "Fecha aplicación", "ha aplicadas", "Observaciones", "Usuario", "Anulado", "datos", "id", "rev"],
+         "Remito", "Fecha aplicación", "ha aplicadas", "Observaciones", "Usuario", "Prueba", "Anulado", "datos", "id", "rev"],
   "OT_Productos": ["OT", "Producto", "Dosis", "Unidad dosis", "Necesidad", "Retirado", "Usado", "Dosis real",
                    "Devuelto", "Sale de", "Anulado", "datos", "id", "rev"],
   "Planificación": ["Zona", "Campo", "Lote", "ha", "Cultivo", "Variedad", "En el mapa", "Observaciones", "Anulado", "id", "rev"],
@@ -38,6 +38,16 @@ const PARTE = 45000;
 
 // ── Hojas ────────────────────────────────────────────────────────────────
 function libro_() { return SpreadsheetApp.getActiveSpreadsheet(); }
+
+/**
+ * Último cambio (rev) que tiene la planilla. Si la app pregunta «¿hay algo
+ * después de X?» y no lo hay, se contesta sin leer las pestañas: así cada
+ * sincronización sin novedades tarda un segundo y no seis.
+ */
+function ultimo_() { return Number(PropertiesService.getScriptProperties().getProperty("ultimo") || 0); }
+function marcar_(rev) {
+  if (rev > ultimo_()) PropertiesService.getScriptProperties().setProperty("ultimo", String(rev));
+}
 
 /** La pestaña de una tabla, creada con su encabezado si no existe. Agrega las columnas que falten. */
 function tabla_(nombre) {
@@ -127,7 +137,7 @@ function doGet(e) {
   if (p.accion === "probar") {
     Object.keys(TABLAS).forEach(tabla_);
     stock_();
-    return respuesta_({ ok: true, planilla: libro_().getName(), version: 3 });
+    return respuesta_({ ok: true, planilla: libro_().getName(), version: 4 });
   }
 
   if (p.accion === "archivo") {
@@ -139,10 +149,13 @@ function doGet(e) {
 
   if (p.accion === "cambios") {
     const desde = Number(p.desde || 0);
+    const ult = ultimo_();
+    if (ult && desde >= ult) return respuesta_({ ok: true, rev: ult, filas: [], registros: [] });
     let rev = desde;
     const filas = [];
     Object.keys(TABLAS).forEach((t) => {
-      const h = tabla_(t);
+      const h = libro_().getSheetByName(t);
+      if (!h || h.getLastRow() < 2) return;
       const datos = h.getDataRange().getValues();
       const enc = datos[0].map(String);
       const cRev = enc.indexOf("rev"), cId = enc.indexOf("id");
@@ -161,6 +174,7 @@ function doGet(e) {
         rev = Math.max(rev, Number(f[0]));
         return { rev: Number(f[0]), tabla: f[1], id: String(f[2]), usuario: f[4], borrado: String(f[5]).toUpperCase() === "TRUE", json: f[6] };
       });
+    marcar_(rev);
     return respuesta_({ ok: true, rev: rev, filas: filas, registros: registros });
   }
   return respuesta_({ ok: false, error: "acción desconocida" });
@@ -218,6 +232,7 @@ function doPost(e) {
       const hr = registros_();
       if (regs.length) hr.getRange(hr.getLastRow() + 1, 1, regs.length, 7).setNumberFormat("@").setValues(regs);
       if (porTabla["Movimientos"]) stock_();
+      marcar_(rev);
       return respuesta_({ ok: true, rev: rev });
     }
 
@@ -268,4 +283,5 @@ function onEdit(e) {
   });
   h.getRange(desde, cId, n, 1).setValues(ids);
   h.getRange(desde, cRev, n, 1).setValues(revs);
+  marcar_(rev);
 }

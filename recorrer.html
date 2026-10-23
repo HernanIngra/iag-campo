@@ -139,7 +139,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=13" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=14" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -178,13 +178,13 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=13"></script>
-<script src="usuario.js?v=13"></script>
-<script src="lotes-tarpuy.js?v=13" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=13" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=13"></script>
-<script src="hojas.js?v=13"></script>
-<script src="nube.js?v=13"></script>
+<script src="vendor/leaflet/leaflet.js?v=14"></script>
+<script src="usuario.js?v=14"></script>
+<script src="lotes-tarpuy.js?v=14" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=14" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=14"></script>
+<script src="hojas.js?v=14"></script>
+<script src="nube.js?v=14"></script>
 <script>
 (function () {
   "use strict";
@@ -358,7 +358,7 @@
     const zonaLote = (id) => { const l = LOTES.find((x) => x.id === id); const c = l && APLIC_META.campos && APLIC_META.campos[l.campo]; return c ? c.zona : ""; };
     const lista = S.ordenes.filter((o) => (o.estado !== "aplicada" || o.retorno === "pendiente") && (o.lotes || []).length)
       .filter((o) => !u || !u.zona || o.lotes.some((x) => zonaLote(x.loteId) === u.zona))
-      .map((o) => ({ id: o.id, numero: o.numero, estado: o.estado === "aplicada" ? "Falta devolver el remanente" : ESTADO_PEND[o.estado] || o.estado,
+      .map((o) => ({ id: o.id, numero: o.prueba ? o.numero + " (prueba)" : o.numero, estado: o.estado === "aplicada" ? "Falta devolver el remanente" : ESTADO_PEND[o.estado] || o.estado,
                      lotes: o.lotes.map((x) => x.loteId), labor: o.labor || "" }));
     lista.forEach((o) => o.lotes.forEach((id) => { (PEND[id] = PEND[id] || []).push(o.numero); }));
     return lista;
@@ -706,7 +706,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=13";
+    window.location.href = "stock.html?v=14";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -748,7 +748,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=13");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=14");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length
