@@ -97,7 +97,11 @@
   .campana button { font-family: inherit; font-size: 11px; font-weight: 700; padding: 3px 10px;
     border-radius: 20px; border: 1.5px solid #cbd5e1; background: #fff; color: #475569; cursor: pointer; }
   .campana button.on { background: #1e293b; color: #fff; border-color: #1e293b; }
-  @media (max-width: 900px) { #ficha { display: none !important; } }
+  /* Celular: la ficha sube desde abajo, por encima de la lista */
+  @media (max-width: 900px) {
+    #ficha { position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 72vh;
+             border-radius: 16px 16px 0 0; z-index: 1200; box-shadow: 0 -8px 30px rgba(15,23,42,.25); }
+  }
   #ficha .fx { position: absolute; top: 9px; right: 11px; background: none; border: none; font-size: 17px;
     color: #94a3b8; cursor: pointer; font-family: inherit; }
   #ficha h3 { font-size: 17px; font-weight: 800; color: #0f172a; }
@@ -130,15 +134,25 @@
   /* Celular: el encabezado no entra entero; se esconde el resumen y los botones se deslizan */
   @media (max-width: 700px) {
     header .info { display: none; }
-    header { overflow-x: auto; overflow-y: hidden; }
+    header { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    header::-webkit-scrollbar { display: none; }
     header > * { flex-shrink: 0; }
+  }
+  /* Celular: mapa arriba; abajo la lista se desliza entera y los botones quedan a mano */
+  @media (max-width: 900px) {
+    #mapa { bottom: auto; height: 38vh; }
+    #panel { top: calc(52px + 38vh); height: auto; bottom: 0; display: block; overflow-y: auto; }
+    .p-body { overflow: visible; }
+    .p-foot { position: sticky; bottom: 0; z-index: 2; }
+    #nube-estado { top: 58px !important; bottom: auto !important; left: auto !important; right: 8px !important;
+                   font-size: 11px !important; padding: 5px 9px !important; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=22" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=23" title="Volver al inicio">⌂ Inicio</a>
   <h1>Recorrer</h1>
   <span class="info" id="info-campos"></span>
   <span class="sp"></span>
@@ -147,7 +161,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=22" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=23" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -186,13 +200,13 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=22"></script>
-<script src="usuario.js?v=22"></script>
-<script src="lotes-tarpuy.js?v=22" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=22" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=22"></script>
-<script src="hojas.js?v=22"></script>
-<script src="nube.js?v=22"></script>
+<script src="vendor/leaflet/leaflet.js?v=23"></script>
+<script src="usuario.js?v=23"></script>
+<script src="lotes-tarpuy.js?v=23" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=23" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=23"></script>
+<script src="hojas.js?v=23"></script>
+<script src="nube.js?v=23"></script>
 <script>
 (function () {
   "use strict";
@@ -483,7 +497,19 @@
 
   // ── Selección ───────────────────────────────────────────────────────────
   function alternar(id) {
-    if (seleccion.has(id)) seleccion.delete(id); else seleccion.add(id);
+    if (seleccion.has(id)) seleccion.delete(id);
+    else {
+      // Una orden es de una sola zona: tocar un lote de la otra zona empieza
+      // una selección nueva (y avisa), en vez de dejar «Recetar» trabado
+      const l = LOTES.find((x) => x.id === id);
+      const z = l ? zonaDeLoteMapa(l) : "";
+      const otras = Array.from(seleccion).filter((s) => { const o = LOTES.find((x) => x.id === s); const zo = o ? zonaDeLoteMapa(o) : ""; return z && zo && zo !== z; });
+      if (otras.length) {
+        otras.forEach((s) => { seleccion.delete(s); repintar(s); });
+        aviso("Una orden es de una sola zona: se sacaron " + otras.length + " lote(s) de la otra zona", 4000);
+      }
+      seleccion.add(id);
+    }
     repintar(id);
     renderLista();
     renderResumen();
@@ -502,7 +528,10 @@
     const sel = LOTES.filter((l) => seleccion.has(l.id));
     const ha = sel.reduce((a, l) => a + l.ha, 0);
     $("sel-n").textContent = sel.length;
-    $("sel-t").textContent = sel.length === 1 ? "lote seleccionado" : "lotes seleccionados";
+    // Qué lotes están elegidos, aunque sean de un campo que no está a la vista
+    const nombres = sel.map((l) => l.nombre);
+    $("sel-t").textContent = (sel.length === 1 ? "lote: " : sel.length ? "lotes: " : "lotes seleccionados") +
+      (nombres.length > 6 ? nombres.slice(0, 6).join(", ") + "…" : nombres.join(", "));
     $("sel-ha").textContent = fmt(ha);
     const b = $("btn-recetar");
     const porQue = motivoNoRecetar(sel);
@@ -749,7 +778,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=22";
+    window.location.href = "stock.html?v=23";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -791,7 +820,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=22");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=23");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length
