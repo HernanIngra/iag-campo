@@ -321,9 +321,11 @@
     if (!c) { txt = "☁ Sin conectar al Drive · conectar"; color = "#92400e"; }
     else {
       var n = pendientes().n;
-      var ult = leer(ULTIMA);
+      var ult = localStorage.getItem(ULTIMA);
       var hora = ult ? new Date(ult).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : "";
-      if (enCurso) txt = "☁ Sincronizando…";
+      // Mientras pregunta a la planilla se puede seguir trabajando: se avisa
+      // con la hora de la última vez, sin parecer que la app está trabada
+      if (enCurso) { txt = hora ? "☁ Sincronizado " + hora + " · buscando novedades…" : "☁ Sincronizando…"; color = "#64748b"; }
       else if (ultimoError) { txt = "☁ Error: " + ultimoError; color = "#b91c1c"; }
       else if (!navigator.onLine) { txt = "☁ Sin señal" + (n ? " · " + n + " cambio(s) por subir" : ""); color = "#92400e"; }
       else if (n) { txt = "☁ " + n + " cambio(s) por subir"; color = "#92400e"; }
