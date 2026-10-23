@@ -249,7 +249,7 @@
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="back" href="index.html?v=8">← Inicio</a>
+  <a class="back" href="index.html?v=9">← Inicio</a>
 </header>
 
 <div class="wrap">
@@ -444,6 +444,7 @@
         <button class="btn btn-green" id="ot-confirm">Confirmar aplicación</button>
         <button class="btn btn-green" id="ot-retorno" style="display:none">↩ Confirmar retorno</button>
         <button class="btn btn-ghost" id="ot-print">📄 PDF para el aplicador</button>
+        <button class="btn btn-green" id="ot-compartir">📲 Compartir (WhatsApp)</button>
         <button class="btn btn-ghost" id="ot-clear">Limpiar</button>
       </div>
     </div>
@@ -894,17 +895,17 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=8"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=8"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=8"></script>
-<script src="lotes-tarpuy.js?v=8" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=8" onerror="window.APLIC_FALTA=true"></script>
-<script src="senasa-catalogo.js?v=8" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=8" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=9"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=9"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=9"></script>
+<script src="lotes-tarpuy.js?v=9" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=9" onerror="window.APLIC_FALTA=true"></script>
+<script src="senasa-catalogo.js?v=9" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=9" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=8" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=8"></script>
-<script src="nube.js?v=8"></script>
+<script src="semillas-catalogo.js?v=9" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=9"></script>
+<script src="nube.js?v=9"></script>
 
 <script>
 (function () {
@@ -3182,7 +3183,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    * dosis, cuánto retirar, de dónde y cuánto vuelve. Si se imprime, la
    * impresora la ajusta a la hoja.
    */
-  function imprimirOT() {
+  function imprimirOT(modo) {
     const ha = otHaTotal();
     if (ha <= 0) return toast("Seleccioná al menos un lote");
     const filas = analizarOT().filter((a) => a.p && num(a.it.dosis) > 0);
@@ -3307,8 +3308,23 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     doc.text(doc.splitTextToSize("Emitida" + (u ? " por " + u.nombre : "") + " el " + hoy() +
              " · dosis de referencia: verificar el marbete de cada producto", UTIL), M, y);
 
-    doc.save(OT.numero + ".pdf");
-    toast("PDF generado: " + OT.numero + ".pdf");
+    const nombre = OT.numero + ".pdf";
+    if (modo !== "compartir") { doc.save(nombre); toast("PDF generado: " + nombre); return; }
+
+    // Compartir: en el teléfono abre el menú del sistema (WhatsApp, mail…) con
+    // el PDF adjunto. Si el equipo no deja compartir archivos, se descarga y
+    // se abre WhatsApp con el texto, para adjuntarlo a mano.
+    const texto = "Orden " + OT.numero + " · " + (OT.labor || "") + " · " +
+      OT.lotes.map((x) => { const l = loteById(x.loteId); return l ? l.nombre : "?"; }).join(", ") + " · " + fmt(ha, 1) + " ha";
+    let archivo = null;
+    try { archivo = new File([doc.output("blob")], nombre, { type: "application/pdf" }); } catch (e) { archivo = null; }
+    if (archivo && navigator.canShare && navigator.canShare({ files: [archivo] })) {
+      navigator.share({ files: [archivo], title: "Orden " + OT.numero, text: texto }).catch(() => { /* lo canceló */ });
+      return;
+    }
+    doc.save(nombre);
+    window.open("https://wa.me/?text=" + encodeURIComponent(texto + " (PDF adjunto)"), "_blank");
+    toast("PDF descargado: adjuntalo en WhatsApp");
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -4175,7 +4191,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-remito").addEventListener("click", remitoOT);
     $("ot-confirm").addEventListener("click", confirmarOT);
     $("ot-retorno").addEventListener("click", confirmarRetorno);
-    $("ot-print").addEventListener("click", imprimirOT);
+    $("ot-print").addEventListener("click", () => imprimirOT());
+    $("ot-compartir").addEventListener("click", () => imprimirOT("compartir"));
     $("ot-pedido").addEventListener("click", generarPedido);
     $("mv-tipo").addEventListener("change", aplicarPermisos);
     $("ot-clear").addEventListener("click", () => { nuevaOT(); renderOT(); toast("Orden nueva"); });
@@ -4246,7 +4263,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=8");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=9");
   load();
   vincularConRegistro();
   nuevaOT();

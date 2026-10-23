@@ -154,7 +154,7 @@
   <p>Planificación · datos en este navegador</p>
   <span class="spacer"></span>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="index.html?v=8" style="text-decoration:none">Inicio</a>
+  <a class="hbtn" href="index.html?v=9" style="text-decoration:none">Inicio</a>
 </header>
 
 <div class="wrap">
@@ -302,12 +302,12 @@
 <div id="toast"></div>
 <datalist id="lista-pa"></datalist>
 
-<script src="vendor/leaflet/leaflet.js?v=8"></script>
-<script src="usuario.js?v=8"></script>
-<script src="lotes-tarpuy.js?v=8" onerror="window.LOTES_FALTA=true"></script>
-<script src="presupuesto-tarpuy.js?v=8" onerror="window.PRESUPUESTO_FALTA=true"></script>
-<script src="presupuesto-calc.js?v=8"></script>
-<script src="nube.js?v=8"></script>
+<script src="vendor/leaflet/leaflet.js?v=9"></script>
+<script src="usuario.js?v=9"></script>
+<script src="lotes-tarpuy.js?v=9" onerror="window.LOTES_FALTA=true"></script>
+<script src="presupuesto-tarpuy.js?v=9" onerror="window.PRESUPUESTO_FALTA=true"></script>
+<script src="presupuesto-calc.js?v=9"></script>
+<script src="nube.js?v=9"></script>
 <script>
 (function () {
   "use strict";
@@ -1014,13 +1014,13 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=8");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=9");
   // El presupuesto lo usan y editan Campo y Oficina: Aplicación no lo ve
   if (!window.IAgUsuario.puede("verPresupuesto")) {
     document.querySelector(".wrap").innerHTML = '<div class="block" style="text-align:center;padding:40px 20px">' +
       '<div class="block-title">El presupuesto no está disponible para tu perfil</div>' +
       '<div class="block-sub" style="margin:8px 0 16px">Lo arman Campo y Oficina.</div>' +
-      '<a class="btn btn-primary" href="index.html?v=8" style="text-decoration:none;display:inline-block">Volver al inicio</a></div>';
+      '<a class="btn btn-primary" href="index.html?v=9" style="text-decoration:none;display:inline-block">Volver al inicio</a></div>';
     return;
   }
   if (window.PRESUPUESTO_FALTA) toast("Falta presupuesto-tarpuy.js — generalo con tools/build_presupuesto.py");
