@@ -38,7 +38,7 @@ de cada depósito y el total.
 
 ### OT · estados
 
-**Solicitada** → **Producto retirado** → **Aplicada** → **Remanente devuelto**
+**Solicitada** → **Producto retirado** → **Aplicación reportada** (por el equipo) → **Aplicada** (confirmada por el encargado) → **Remanente devuelto**
 
 Una orden ya ejecutada antes de usar la app se carga con Estado «Aplicada»,
 los lotes como `EM10 (68 ha), EM11` y sus productos en OT_Productos (misma

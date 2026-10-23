@@ -156,12 +156,14 @@
   // ── OT ────────────────────────────────────────────────────────────────
   function estadoTxt(o) {
     if (o.estado === "transito") return "Producto retirado";
+    if (o.estado === "reportada") return "Aplicación reportada";
     if (o.estado === "aplicada") return o.retorno === "hecho" ? "Remanente devuelto" : "Aplicada";
     return "Solicitada";
   }
   function estadoDe(txt) {
     var s = slug(txt);
     if (s === "producto-retirado" || s === "en-transito" || s === "retirado") return { estado: "transito" };
+    if (s === "aplicacion-reportada" || s === "reportada") return { estado: "reportada" };
     if (s === "remanente-devuelto" || s === "cerrada") return { estado: "aplicada", retorno: "hecho" };
     if (s === "aplicada") return { estado: "aplicada" };
     return { estado: "borrador" };
@@ -192,7 +194,7 @@
     var k = Object.keys(zs);
     return k.length === 1 ? (ZONA_TXT[k[0]] || k[0]) : k.length ? "Mezcladas" : "";
   }
-  var OT_DATOS = ["campania", "mojado", "tanque", "lotes", "remito", "retorno", "haReal", "deposito"];
+  var OT_DATOS = ["campania", "mojado", "tanque", "lotes", "remito", "retorno", "haReal", "deposito", "reporte"];
   function filaOT(S, o) {
     var resto = {};
     OT_DATOS.forEach(function (k) { if (o[k] !== undefined) resto[k] = o[k]; });

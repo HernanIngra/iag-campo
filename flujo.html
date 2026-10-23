@@ -82,7 +82,7 @@
   <span class="logo">I.Ag</span>
   <h1>Cómo funciona</h1>
   <span class="spacer"></span>
-  <a href="index.html?v=9">Inicio</a>
+  <a href="index.html?v=10">Inicio</a>
 </header>
 
 <div class="wrap">
@@ -133,15 +133,15 @@
         </g>
         <g font-size="17" font-weight="800">
           <text x="16" y="82" fill="#b45309">Oficina</text>
-          <text x="16" y="178" fill="#15803d">Campo</text>
-          <text x="16" y="288" fill="#1d4ed8">Aplicación</text>
+          <text x="16" y="178" fill="#15803d">Encargado</text>
+          <text x="16" y="288" fill="#1d4ed8">Pulverización</text>
           <text x="16" y="448" fill="#475569">Stock</text>
         </g>
         <g font-size="13.5" fill="#64748b">
-          <text x="16" y="199">Juanjo</text>
-          <text x="16" y="217">Rubén (Lajitas)</text>
-          <text x="16" y="309">Ramiro · Norte</text>
-          <text x="16" y="327">Rubén · Lajitas</text>
+          <text x="16" y="199">Rubén · Ramiro</text>
+          <text x="16" y="217">(y el gerente)</text>
+          <text x="16" y="309">Equipo de cada zona</text>
+          <text x="16" y="327">confirma: encargado</text>
           <text x="16" y="469">dónde está</text>
           <text x="16" y="487">el producto</text>
         </g>
@@ -188,7 +188,7 @@
           <rect x="890" y="257" width="160" height="76" rx="10" fill="#fff" stroke="#1d4ed8" stroke-width="1.8" />
           <circle cx="909" cy="278" r="11" fill="#1d4ed8" /><text x="909" y="283" text-anchor="middle" fill="#fff" font-weight="800">5</text>
           <text x="927" y="284" font-size="16" font-weight="800" fill="#0f172a">Aplicación</text>
-          <text x="904" y="308">ha y dosis real</text><text x="904" y="325">baja lo usado</text>
+          <text x="904" y="308">equipo reporta,</text><text x="904" y="325">encargado confirma</text>
 
           <!-- 6 Retorno · Aplicación -->
           <rect x="1080" y="257" width="160" height="76" rx="10" fill="#fff" stroke="#1d4ed8" stroke-width="1.8" />
@@ -274,28 +274,28 @@
       </div>
       <div class="paso" style="--c:#15803d">
         <div class="cab"><span class="n">3</span><span class="t">Recetar la orden</span></div>
-        <div class="quien">Campo · Juanjo, y Rubén en Lajitas</div>
+        <div class="quien">Encargado de la zona · o el gerente</div>
         <p>Lotes (o parte de un lote), productos y dosis. Si falta un producto en la zona: traerlo de la otra o comprarlo. En campos en sociedad, quién aporta: Tarpuy o Lartirigoyen.</p>
         <div class="stock">No mueve stock.</div>
         <div class="donde">Recorrer y recetar → Recetar (OT)</div>
       </div>
       <div class="paso" style="--c:#1d4ed8">
         <div class="cab"><span class="n">4</span><span class="t">Retirar (remito)</span></div>
-        <div class="quien">Aplicación de la zona</div>
+        <div class="quien">Equipo o encargado de la zona</div>
         <p>Primero se usan los envases abiertos del Rincón; el resto sale en envases enteros.</p>
         <div class="stock">Del depósito → <strong>en tránsito</strong>.</div>
         <div class="donde">Órdenes pendientes → Para retirar</div>
       </div>
       <div class="paso" style="--c:#1d4ed8">
-        <div class="cab"><span class="n">5</span><span class="t">Confirmar la aplicación</span></div>
-        <div class="quien">Aplicación de la zona</div>
+        <div class="cab"><span class="n">5</span><span class="t">Reportar y confirmar la aplicación</span></div>
+        <div class="quien">Equipo reporta · encargado confirma</div>
         <p>Superficie realmente aplicada y dosis real; el remanente se calcula solo (y se puede corregir).</p>
         <div class="stock">Lo usado se da de baja; el remanente sigue en tránsito.</div>
         <div class="donde">Órdenes pendientes → En tránsito</div>
       </div>
       <div class="paso" style="--c:#1d4ed8">
         <div class="cab"><span class="n">6</span><span class="t">Confirmar el retorno</span></div>
-        <div class="quien">Aplicación de la zona</div>
+        <div class="quien">Encargado de la zona</div>
         <p>Cuánto volvió realmente. Lo que no volvió se da como usado.</p>
         <div class="stock">Envases enteros → cerrados; empezados → <strong>Rincón</strong> de El Mistol o Lartirigoyen.</div>
         <div class="donde">Órdenes pendientes → Retorno pendiente</div>
@@ -308,25 +308,28 @@
     <div class="tbl"><table>
       <thead><tr><th>Quién</th><th>En el inicio</th><th>Hace</th></tr></thead>
       <tbody>
-        <tr><td><span class="chip" style="background:#15803d">Campo</span> Juanjo</td>
-          <td>Recorrer y recetar · Órdenes pendientes · Stock (tránsito primero) · Presupuesto</td>
-          <td>Planifica, receta las órdenes</td></tr>
-        <tr><td><span class="chip" style="background:#1d4ed8">Aplicación</span> Ramiro · Norte</td>
-          <td>Órdenes pendientes de El Mistol y La Iluminada · Stock</td>
-          <td>Retira, confirma la aplicación y el retorno; verifica compras</td></tr>
-        <tr><td><span class="chip" style="background:#1d4ed8">Aplicación</span> Rubén · Lajitas</td>
+        <tr><td><span class="chip" style="background:#15803d">Gerente de campo</span> Juanjo Arias</td>
+          <td>Recorrer y recetar · Órdenes pendientes · Stock · Presupuesto</td>
+          <td>Todo, en las dos zonas</td></tr>
+        <tr><td><span class="chip" style="background:#0e7490">Encargado</span> Rubén Navajas · Lajitas</td>
           <td>Recorrer y recetar · Órdenes pendientes de Lajitas · Stock</td>
-          <td>Lo mismo que Ramiro, y además receta órdenes de Lajitas</td></tr>
-        <tr><td><span class="chip" style="background:#b45309">Oficina</span></td>
-          <td>Órdenes pendientes · Stock y compras · Presupuesto</td>
-          <td>Compra con destino, planifica con Campo</td></tr>
+          <td>Crea las órdenes, confirma la aplicación (o la reporta y confirma) y la devolución del remanente</td></tr>
+        <tr><td><span class="chip" style="background:#0e7490">Encargado</span> Ramiro · Norte</td>
+          <td>Lo mismo, para El Mistol y La Iluminada</td>
+          <td>Lo mismo, en el Norte</td></tr>
+        <tr><td><span class="chip" style="background:#1d4ed8">Pulverización</span> Equipo Lajitas · Equipo Norte</td>
+          <td>Órdenes pendientes de su zona · Mapa con los lotes pendientes</td>
+          <td>Retira el producto y reporta la aplicación para que la confirme el encargado</td></tr>
+        <tr><td><span class="chip" style="background:#b45309">Oficina Salta</span></td>
+          <td>Stock y compras · Presupuesto</td>
+          <td>Compras y presupuesto</td></tr>
       </tbody>
     </table></div>
   </div>
 </div>
-<script src="presupuesto-tarpuy.js?v=9" onerror="window.PRESUPUESTO_FALTA=true"></script>
-<script src="presupuesto-calc.js?v=9"></script>
-<script src="nube.js?v=9"></script>
+<script src="presupuesto-tarpuy.js?v=10" onerror="window.PRESUPUESTO_FALTA=true"></script>
+<script src="presupuesto-calc.js?v=10"></script>
+<script src="nube.js?v=10"></script>
 <script>
 (function () {
   "use strict";

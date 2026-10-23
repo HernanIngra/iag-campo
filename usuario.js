@@ -3,29 +3,32 @@
 (function (g) {
   "use strict";
 
+  // Revisados con el cliente el 23/10.
   var USUARIOS = [
-    { id: "juanjo",  nombre: "Juanjo",  rol: "campo",      titulo: "Campo",
-      hace: "Recorre los lotes y emite las órdenes de trabajo" },
-    { id: "ruben",   nombre: "Rubén",   rol: "aplicacion", titulo: "Aplicación · Lajitas", zona: "LAJITAS",
-      hace: "Emite órdenes, retira el producto, confirma las aplicaciones y el retorno de envases en Lajitas",
-      permisos: { emitirOT: 1 } },
-    { id: "ramiro",  nombre: "Ramiro",  rol: "aplicacion", titulo: "Aplicación · Norte", zona: "NORTE",
-      hace: "Retira el producto, confirma las aplicaciones y el retorno de envases en El Mistol y La Iluminada" },
-    { id: "oficina", nombre: "Oficina", rol: "oficina",    titulo: "Oficina",
-      hace: "Carga las compras, las distribuye entre depósitos y arma el presupuesto" },
+    { id: "juanjo",  nombre: "Juanjo Arias",  rol: "gerente",  titulo: "Gerente de campo",
+      hace: "Puede hacer todo: recetar, retirar, confirmar, comprar y presupuestar" },
+    { id: "ruben",   nombre: "Rubén Navajas", rol: "encargado", titulo: "Encargado · Lajitas", zona: "LAJITAS",
+      hace: "Crea las órdenes de Lajitas y confirma su realización y la devolución del remanente" },
+    { id: "ramiro",  nombre: "Ramiro",        rol: "encargado", titulo: "Encargado · Norte", zona: "NORTE",
+      hace: "Crea las órdenes de El Mistol y La Iluminada y confirma su realización y la devolución del remanente" },
+    { id: "eq-lajitas", nombre: "Equipo pulverización Lajitas", rol: "equipo", titulo: "Pulverización · Lajitas", zona: "LAJITAS",
+      hace: "Recibe las órdenes pendientes de Lajitas y reporta la aplicación para que la confirme el encargado" },
+    { id: "eq-norte", nombre: "Equipo pulverización Norte", rol: "equipo", titulo: "Pulverización · Norte", zona: "NORTE",
+      hace: "Recibe las órdenes pendientes del Norte y reporta la aplicación para que la confirme el encargado" },
+    { id: "oficina", nombre: "Oficina Salta", rol: "oficina",  titulo: "Oficina",
+      hace: "Carga las compras y arma el presupuesto" },
   ];
-  // `permisos` en un usuario corrige los de su rol: Rubén emite órdenes
-  // aunque Aplicación en general no lo hace (Ramiro, por ahora, no).
 
-  // Los traslados entre depósitos los hace cualquiera: mover un bidón de un
-  // galpón a otro no es una decisión que haya que autorizar.
-  // Aplicación hace el circuito físico del producto: lo retira (remito),
-  // confirma la aplicación y confirma lo que vuelve. Cada uno en su zona.
+  // Circuito de una orden: el encargado (o el gerente) la emite; el equipo o
+  // el encargado retira el producto (remito); el equipo reporta la aplicación
+  // y el encargado la confirma (o la reporta y confirma él, si el equipo no lo
+  // hizo); el encargado confirma la devolución del remanente. Cada uno en su zona.
   // verificar = poner el tilde de que la compra está físicamente en el galpón.
   var PERMISOS = {
-    campo:      { verPresupuesto: 1, emitirOT: 1, remitir: 0, confirmarOT: 0, confirmarRetorno: 0, comprar: 0, verificar: 1, trasladar: 1 },
-    aplicacion: { verPresupuesto: 0, emitirOT: 0, remitir: 1, confirmarOT: 1, confirmarRetorno: 1, comprar: 0, verificar: 1, trasladar: 1 },
-    oficina:    { verPresupuesto: 1, emitirOT: 0, remitir: 0, confirmarOT: 0, confirmarRetorno: 0, comprar: 1, verificar: 1, trasladar: 1 },
+    gerente:   { verPresupuesto: 1, emitirOT: 1, remitir: 1, reportar: 1, confirmarOT: 1, confirmarRetorno: 1, comprar: 1, verificar: 1, trasladar: 1 },
+    encargado: { verPresupuesto: 0, emitirOT: 1, remitir: 1, reportar: 1, confirmarOT: 1, confirmarRetorno: 1, comprar: 0, verificar: 1, trasladar: 1 },
+    equipo:    { verPresupuesto: 0, emitirOT: 0, remitir: 1, reportar: 1, confirmarOT: 0, confirmarRetorno: 0, comprar: 0, verificar: 0, trasladar: 0 },
+    oficina:   { verPresupuesto: 1, emitirOT: 0, remitir: 0, reportar: 0, confirmarOT: 0, confirmarRetorno: 0, comprar: 1, verificar: 1, trasladar: 1 },
   };
 
   var CLAVE = "iag_usuario";
@@ -68,13 +71,13 @@
   function barra(destinoInicio) {
     var u = actual();
     if (!u) {
-      return '<a class="hbtn" href="' + (destinoInicio || "index.html?v=9") +
+      return '<a class="hbtn" href="' + (destinoInicio || "index.html?v=10") +
              '" style="text-decoration:none">Identificarse</a>';
     }
     return '<span class="quien" title="' + u.hace + '">' +
              '<b>' + u.nombre + '</b><span class="rol">' + u.titulo + '</span>' +
            '</span>' +
-           '<a class="hbtn" href="' + (destinoInicio || "index.html?v=9") +
+           '<a class="hbtn" href="' + (destinoInicio || "index.html?v=10") +
            '" style="text-decoration:none" title="Cambiar de usuario">Cambiar</a>';
   }
 

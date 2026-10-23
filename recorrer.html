@@ -118,6 +118,13 @@
   #aviso { position: absolute; top: 62px; left: 50%; transform: translateX(-50%); z-index: 950;
     background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 8px 14px; border-radius: 9px;
     font-size: 12.5px; font-weight: 600; box-shadow: 0 4px 12px rgba(15,23,42,.1); display: none; }
+  #pend-mapa { margin-top: 8px; }
+  #pend-mapa .pm-t { font-size: 11.5px; font-weight: 800; color: #c2410c; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  #pend-mapa .pm { display: block; width: 100%; text-align: left; font-family: inherit; background: #fff7ed; border: 1px solid #fed7aa;
+    border-radius: 8px; padding: 5px 8px; margin-bottom: 4px; cursor: pointer; font-size: 12.5px; color: #0f172a; }
+  #pend-mapa .pm:hover { border-color: #f97316; }
+  #pend-mapa .pm b { color: #c2410c; }
+  #pend-mapa .pm span { color: #64748b; font-size: 11.5px; }
 </style>
 </head>
 <body>
@@ -132,7 +139,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=9" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=10" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -155,6 +162,7 @@
   <div class="p-head">
     <input type="text" id="buscar" placeholder="Buscar lote…" autocomplete="off" />
     <div class="chips" id="chips-campos"></div>
+    <div id="pend-mapa"></div>
   </div>
   <div class="p-body" id="lista"></div>
   <div class="p-foot">
@@ -170,12 +178,12 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=9"></script>
-<script src="usuario.js?v=9"></script>
-<script src="lotes-tarpuy.js?v=9" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=9" onerror="window.APLIC_FALTA=true"></script>
-<script src="hojas.js?v=9"></script>
-<script src="nube.js?v=9"></script>
+<script src="vendor/leaflet/leaflet.js?v=10"></script>
+<script src="usuario.js?v=10"></script>
+<script src="lotes-tarpuy.js?v=10" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=10" onerror="window.APLIC_FALTA=true"></script>
+<script src="hojas.js?v=10"></script>
+<script src="nube.js?v=10"></script>
 <script>
 (function () {
   "use strict";
@@ -314,11 +322,51 @@
   let modoRelleno = 0;
   const RELLENO = [0, 0.18, 0.42];
 
+  // ── Órdenes pendientes en el mapa ───────────────────────────────────────
+  // loteId → órdenes que todavía no se cerraron (de la zona del usuario, si tiene)
+  let PEND = {};
+  const ESTADO_PEND = { borrador: "Solicitada", transito: "Producto retirado", reportada: "Aplicación reportada" };
+  function calcularPendientes() {
+    PEND = {};
+    let S = null;
+    try { S = JSON.parse(localStorage.getItem("iag_stock_v2") || "null"); } catch (e) { S = null; }
+    if (!S || !Array.isArray(S.ordenes)) return [];
+    const u = window.IAgUsuario.actual();
+    const zonaLote = (id) => { const l = LOTES.find((x) => x.id === id); const c = l && APLIC_META.campos && APLIC_META.campos[l.campo]; return c ? c.zona : ""; };
+    const lista = S.ordenes.filter((o) => (o.estado !== "aplicada" || o.retorno === "pendiente") && (o.lotes || []).length)
+      .filter((o) => !u || !u.zona || o.lotes.some((x) => zonaLote(x.loteId) === u.zona))
+      .map((o) => ({ id: o.id, numero: o.numero, estado: o.estado === "aplicada" ? "Falta devolver el remanente" : ESTADO_PEND[o.estado] || o.estado,
+                     lotes: o.lotes.map((x) => x.loteId), labor: o.labor || "" }));
+    lista.forEach((o) => o.lotes.forEach((id) => { (PEND[id] = PEND[id] || []).push(o.numero); }));
+    return lista;
+  }
+  const etiqueta = (l) => l.nombre + (PEND[l.id] ? " · " + PEND[l.id].join(" · ") : "");
+  function renderPendientesMapa() {
+    const lista = calcularPendientes();
+    LOTES.forEach((l) => { if (capaDe[l.id]) { capaDe[l.id].setStyle(estilo(l)); capaDe[l.id].setTooltipContent(etiqueta(l)); } });
+    const cont = $("pend-mapa");
+    if (!cont) return;
+    cont.innerHTML = lista.length
+      ? '<div class="pm-t">Órdenes pendientes · ' + lista.length + "</div>" + lista.map((o) => `<button class="pm" data-pm="${esc(o.id)}">
+          <b>${esc(o.numero)}</b> · ${esc(o.estado)}<br><span>${esc(o.lotes.map((id) => (LOTES.find((x) => x.id === id) || {}).nombre || "?").join(", "))}${o.labor ? " · " + esc(o.labor) : ""}</span></button>`).join("")
+      : "";
+    cont.querySelectorAll("[data-pm]").forEach((b) => b.addEventListener("click", () => {
+      const o = lista.find((x) => x.id === b.dataset.pm);
+      const ls = LOTES.filter((l) => o.lotes.indexOf(l.id) !== -1);
+      if (!ls.length) return;
+      ls.forEach((l) => camposVisibles.add(l.campo));
+      aplicarVisibilidad(); renderChips(); renderLista();
+      mapa.fitBounds(L.latLngBounds(ls.flatMap((l) => l.anillos[0].map((p) => [p[1], p[0]]))), { padding: [60, 60] });
+    }));
+  }
+
   function estilo(l) {
     const sel = seleccion.has(l.id);
+    // Lote con una orden pendiente: borde naranja grueso, para ubicarlo en el campo
+    const pend = !sel && PEND[l.id];
     return {
-      color: sel ? "#22c55e" : colorLote(l),
-      weight: sel ? 4 : 2.5,
+      color: sel ? "#22c55e" : pend ? "#f97316" : colorLote(l),
+      weight: sel ? 4 : pend ? 5 : 2.5,
       opacity: 1,
       fillColor: sel ? "#22c55e" : colorLote(l),
       // Seleccionado siempre se rellena, aunque el modo sea "sólo contorno":
@@ -358,7 +406,7 @@
     const poly = L.polygon(anillos, estilo(l));
     poly.addTo(mapa);
     poly.on("click", () => { alternar(l.id); mostrarFicha(l); });
-    poly.bindTooltip(l.nombre, { permanent: true, direction: "center", className: "etiq-lote" });
+    poly.bindTooltip(etiqueta(l), { permanent: true, direction: "center", className: "etiq-lote" });
     capaDe[l.id] = poly;
   });
 
@@ -610,7 +658,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=9";
+    window.location.href = "stock.html?v=10";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -652,7 +700,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=9");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=10");
 
   // Recetar es tarea de Campo; los demás miran el mapa y la historia
   if (!window.IAgUsuario.puede("emitirOT")) {
@@ -668,6 +716,9 @@
   renderChips();
   renderLista();
   renderResumen();
+  renderPendientesMapa();
+  // Llegó una orden nueva (o cambió una) desde el Drive: se marca en el mapa
+  if (window.IAgNube) window.IAgNube.alCambiar("iag_stock_v2", renderPendientesMapa);
 })();
 </script>
 </body>
