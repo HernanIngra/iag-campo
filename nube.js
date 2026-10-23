@@ -16,7 +16,7 @@
   var BASE = "iag_nube_base2";         // {clave localStorage: {tabla: {id: json}}} — lo último en común con el Drive
   var REV = "iag_nube_rev";           // + "_" + clave: última revisión bajada para esa clave
   var ULTIMA = "iag_nube_ultima";     // fecha de la última sincronización buena
-  var INTENTO_ARCHIVOS = "iag_nube_intento_archivos";   // último intento de bajar historial y presupuesto
+  var INTENTO_ARCHIVOS = "iag_nube_falta_archivos";   // último intento de bajar historial y presupuesto
 
   // ── Datos de la empresa ───────────────────────────────────────────────
   var ARCHIVOS = [
@@ -346,8 +346,8 @@
     // pedido al servidor gratuito de Google tarda segundos
     var intento = Number(leer(INTENTO_ARCHIVOS) || 0);
     if (necesarios.length && config() && navigator.onLine && Date.now() - intento > 10 * 60000) {
-      escribir(INTENTO_ARCHIVOS, Date.now());
-      bajarArchivos(necesarios).then(function () { location.reload(); }).catch(function () { /* se reintenta en 10 minutos */ });
+      bajarArchivos(necesarios).then(function () { location.reload(); })
+        .catch(function () { escribir(INTENTO_ARCHIVOS, Date.now()); /* no estaba: se reintenta en 10 minutos */ });
     }
     // Al pasar de una página a otra no se vuelve a preguntar si se sincronizó
     // hace menos de medio minuto: la página abre con lo que ya tiene el equipo
