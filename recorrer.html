@@ -125,12 +125,20 @@
   #pend-mapa .pm:hover { border-color: #f97316; }
   #pend-mapa .pm b { color: #c2410c; }
   #pend-mapa .pm span { color: #64748b; font-size: 11.5px; }
+  .ir-inicio { background: #fff; color: #0f172a !important; font-weight: 800; font-size: 14px; padding: 7px 12px;
+               border-radius: 9px; text-decoration: none; white-space: nowrap; align-self: center; }
+  /* Celular: el encabezado no entra entero; se esconde el resumen y los botones se deslizan */
+  @media (max-width: 700px) {
+    header .info { display: none; }
+    header { overflow-x: auto; overflow-y: hidden; }
+    header > * { flex-shrink: 0; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <span class="logo">I.Ag</span>
+  <a class="ir-inicio" href="index.html?v=21" title="Volver al inicio">⌂ Inicio</a>
   <h1>Recorrer</h1>
   <span class="info" id="info-campos"></span>
   <span class="sp"></span>
@@ -139,7 +147,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=20" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=21" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -178,13 +186,13 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=20"></script>
-<script src="usuario.js?v=20"></script>
-<script src="lotes-tarpuy.js?v=20" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=20" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=20"></script>
-<script src="hojas.js?v=20"></script>
-<script src="nube.js?v=20"></script>
+<script src="vendor/leaflet/leaflet.js?v=21"></script>
+<script src="usuario.js?v=21"></script>
+<script src="lotes-tarpuy.js?v=21" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=21" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=21"></script>
+<script src="hojas.js?v=21"></script>
+<script src="nube.js?v=21"></script>
 <script>
 (function () {
   "use strict";
@@ -711,7 +719,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=20";
+    window.location.href = "stock.html?v=21";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -753,7 +761,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=20");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=21");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length
