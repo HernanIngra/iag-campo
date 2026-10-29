@@ -246,7 +246,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=26" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=27" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -926,18 +926,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=26"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=26"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=26"></script>
-<script src="lotes-tarpuy.js?v=26" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=26" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=26"></script>
-<script src="senasa-catalogo.js?v=26" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=26" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=27"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=27"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=27"></script>
+<script src="lotes-tarpuy.js?v=27" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=27" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=27"></script>
+<script src="senasa-catalogo.js?v=27" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=27" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=26" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=26"></script>
-<script src="nube.js?v=26"></script>
+<script src="semillas-catalogo.js?v=27" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=27"></script>
+<script src="nube.js?v=27"></script>
 
 <script>
 (function () {
@@ -3428,9 +3428,28 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     let escala = ancho / wDeg;
     if (hDeg * escala > 80) escala = 80 / hDeg;
     const w = wDeg * escala, h = hDeg * escala;
-    // Si no entra en lo que queda de la página, título y croquis van a la siguiente
-    pag.espacio(h + 16);
+    // Lotes que no se aplican enteros: un cartel arriba del croquis, porque el
+    // dibujo pinta el lote completo y el aplicador tiene que saber qué parte va
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);   // el ancho del texto se mide con esta letra
+    const parciales = OT.lotes.map((o) => ({ o, l: loteById(o.loteId) }))
+      .filter(({ o, l }) => l && num(o.ha) < num(l.ha) - 0.05)
+      .map(({ o, l }) => doc.splitTextToSize(l.nombre + ": " + fmt(num(o.ha), 1) + " de " + fmt(l.ha, 1) + " ha" +
+                                             (o.nota ? " · " + o.nota : " · ver qué parte con el responsable"), ancho - 6));
+    const altoCartel = parciales.length ? 9 + parciales.reduce((a, t) => a + 4.6 * t.length, 0) : 0;
+    // Si no entra en lo que queda de la página, título, cartel y croquis van a la siguiente
+    pag.espacio(h + 16 + altoCartel);
     pag.tituloSeccion("Croquis");
+    if (parciales.length) {
+      let yc = pag.y();
+      doc.setFillColor(254, 243, 199); doc.setDrawColor(217, 119, 6); doc.setLineWidth(0.6);
+      doc.rect(x, yc, ancho, altoCartel - 2, "FD");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(146, 64, 14);
+      doc.text("APLICACIÓN PARCIAL · no va el lote entero", x + 3, yc + 5);
+      yc += 9.5;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+      parciales.forEach((t) => { doc.text(t, x + 3, yc); yc += 4.6 * t.length; });
+      pag.mover(altoCartel + 1);
+    }
     const x0 = x + (ancho - w) / 2, y0 = pag.y();
     const aXY = (p) => [x0 + (p[0] - minLon) * kx * escala, y0 + (maxLat - p[1]) * escala];
     const toca = (l) => l.anillos[0].some((p) => p[0] >= minLon && p[0] <= maxLon && p[1] >= minLat && p[1] <= maxLat);
@@ -3541,7 +3560,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     y = doc.lastAutoTable.finalY + 6;
 
     // Croquis de los lotes: las formas del mapa, sin depender de la imagen satelital
-    y = croquisPDF(doc, M, UTIL, { y: () => y, espacio, tituloSeccion });
+    y = croquisPDF(doc, M, UTIL, { y: () => y, espacio, tituloSeccion, mover: (d) => { y += d; } });
 
     // Agua
     const mojado = num(OT.mojado);
@@ -4623,7 +4642,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=26");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=27");
   load();
   vincularConRegistro();
   nuevaOT();
