@@ -5,7 +5,9 @@
 
   // Revisados con el cliente el 23/10.
   var USUARIOS = [
-    { id: "juanjo",  nombre: "Juanjo Arias",  rol: "gerente",  titulo: "Gerente de campo",
+    { id: "gerencia-general", nombre: "Gerencia General", rol: "gerente", titulo: "Gerencia General",
+      hace: "Ve y carga todo: recetar, retirar, confirmar, comprar y presupuestar, en las dos zonas" },
+    { id: "juanjo",  nombre: "Juanjo Arias",  rol: "gerente",  titulo: "Gerencia Producción",
       hace: "Puede hacer todo: recetar, retirar, confirmar, comprar y presupuestar" },
     { id: "ruben",   nombre: "Rubén Navajas", rol: "encargado", titulo: "Encargado · Lajitas", zona: "LAJITAS",
       hace: "Crea las órdenes de Lajitas y confirma su realización y la devolución del remanente" },
@@ -23,7 +25,8 @@
   // el encargado retira el producto (remito); el equipo reporta la aplicación
   // y el encargado la confirma (o la reporta y confirma él, si el equipo no lo
   // hizo); el encargado confirma la devolución del remanente. Cada uno en su zona.
-  // borrarOT = borrar una orden pendiente (sólo el gerente; ver stock.html).
+  // borrarOT = borrar una orden pendiente (sólo el rol gerente: Gerencia General
+  // y Gerencia Producción; ver stock.html).
   // verificar = poner el tilde de que la compra está físicamente en el galpón.
   var PERMISOS = {
     gerente:   { borrarOT: 1, verPresupuesto: 1, emitirOT: 1, remitir: 1, reportar: 1, confirmarOT: 1, confirmarRetorno: 1, comprar: 1, verificar: 1, trasladar: 1 },
@@ -72,13 +75,13 @@
   function barra(destinoInicio) {
     var u = actual();
     if (!u) {
-      return '<a class="hbtn" href="' + (destinoInicio || "index.html?v=25") +
+      return '<a class="hbtn" href="' + (destinoInicio || "index.html?v=26") +
              '" style="text-decoration:none">Identificarse</a>';
     }
     return '<span class="quien" title="' + u.hace + '">' +
              '<b>' + u.nombre + '</b><span class="rol">' + u.titulo + '</span>' +
            '</span>' +
-           '<a class="hbtn" href="' + (destinoInicio || "index.html?v=25") +
+           '<a class="hbtn" href="' + (destinoInicio || "index.html?v=26") +
            '" style="text-decoration:none" title="Cambiar de usuario">Cambiar</a>';
   }
 
