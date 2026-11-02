@@ -42,8 +42,13 @@
   var CON_SIGNO = { transferencia: 1, apertura: 1, remito: 1, retorno: 1 };
   var SIGNO = { inicial: 1, compra: 1, ajuste_pos: 1, rincon: 1, venta: -1, uso: -1, ajuste_neg: -1 };
 
+  // Tránsito por zona (2/11): «transito-norte» ↔ «En tránsito Norte»
   function nombreDep(S, id) {
     if (id === TRANSITO) return "En tránsito";
+    if (String(id).indexOf(TRANSITO + "-") === 0) {
+      var z = id.slice(TRANSITO.length + 1).toUpperCase();
+      return "En tránsito " + (ZONA_TXT[z] || z);
+    }
     var d = (S.depositos || []).find(function (x) { return x.id === id; });
     return d ? d.nombre : "";
   }
@@ -60,6 +65,7 @@
   function depPorNombre(S, nombre) {
     if (!nombre) return "";
     if (slug(nombre) === "en-transito") return TRANSITO;
+    if (slug(nombre).indexOf("en-transito-") === 0) return TRANSITO + "-" + slug(nombre).slice("en-transito-".length);
     var d = (S.depositos || []).find(function (x) { return slug(x.nombre) === slug(nombre); });
     if (!d) { d = { id: "dep-" + slug(nombre), nombre: String(nombre).trim(), zona: "", tipo: "propio", ubicacion: "" }; S.depositos.push(d); }
     return d.id;
@@ -210,7 +216,7 @@
     var k = Object.keys(zs);
     return k.length === 1 ? (ZONA_TXT[k[0]] || k[0]) : k.length ? "Mezcladas" : "";
   }
-  var OT_DATOS = ["campania", "mojado", "tanque", "lotes", "remito", "retorno", "haReal", "deposito", "reporte"];
+  var OT_DATOS = ["campania", "mojado", "tanque", "lotes", "remito", "retorno", "haReal", "deposito", "reporte", "salidas", "variedad"];
   function filaOT(S, o) {
     var resto = {};
     OT_DATOS.forEach(function (k) { if (o[k] !== undefined) resto[k] = o[k]; });
@@ -218,7 +224,8 @@
       "OT": o.numero, "Fecha": o.fecha || "", "Estado": estadoTxt(o), "Zona": zonaDe(S, o), "Lotes": lotesTxt(S, o),
       "ha": r3((o.lotes || []).reduce(function (a, x) { return a + num(x.ha); }, 0)),
       "Cultivo": o.cultivo || "", "Labor": o.labor || "", "Aplicador": o.responsable || "", "Aporta": o.aporta || "",
-      "Remito": o.remito ? o.remito.numero : "", "Fecha aplicación": o.fechaAplicacion || "",
+      // Las salidas en tandas: los remitos en papel (o el número interno RS-, si no hubo papel)
+      "Remito": o.salidas && o.salidas.length ? o.salidas.map(function (x) { return x.remito || x.numero; }).join(", ") : o.remito ? o.remito.numero : "", "Fecha aplicación": o.fechaAplicacion || "",
       "ha aplicadas": o.haReal ? r3(o.haReal) : "", "Observaciones": o.obs || "", "Usuario": o.usuario || "",
       "Anulado": "", "datos": JSON.stringify(resto),
     }, prueba(o.prueba));
@@ -229,7 +236,7 @@
     for (var j = 0; j < i; j++) if (o.items[j].prod === it.prod) n++;
     return o.id + "|" + it.prod + (n ? "|" + n : "");
   }
-  var ITEM_DATOS = ["origen", "decision", "retiros", "origenRemito", "remanente"];
+  var ITEM_DATOS = ["origen", "decision", "retiros", "origenRemito", "remanente", "salidaCompleta"];
   function filasItems(S, o) {
     var out = {};
     var ha = (o.lotes || []).reduce(function (a, x) { return a + num(x.ha); }, 0);
@@ -266,7 +273,7 @@
     if (si(f["Prueba"])) o.prueba = true;
     else if (/^no$/i.test(String(f["Prueba"] || "").trim())) o.prueba = false;
     o.haReal = f["ha aplicadas"] !== "" && f["ha aplicadas"] !== undefined ? num(f["ha aplicadas"]) : o.haReal;
-    if (f["Remito"]) o.remito = Object.assign({}, o.remito || {}, { numero: String(f["Remito"]) });
+    if (f["Remito"] && !(o.salidas && o.salidas.length)) o.remito = Object.assign({}, o.remito || {}, { numero: String(f["Remito"]) });
     if (o.mojado === undefined) o.mojado = 80;
     if (o.tanque === undefined) o.tanque = 3000;
     o.items = filasProd.slice().sort(function (a, b) { return (datosDe(a.f.datos).orden || 0) - (datosDe(b.f.datos).orden || 0); })

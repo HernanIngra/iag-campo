@@ -75,11 +75,16 @@
       .then(function (r) { return r.json(); });
   }
 
+  var MEMORIA = "iag_nube_memoria";   // el último archivo que no entró en la memoria del navegador
   function bajarArchivos(lista) {
     return Promise.all(lista.map(function (a) {
       return pedir({ accion: "archivo", nombre: a.nombre }).then(function (r) {
         if (!r.ok) throw new Error(r.error || "no se pudo bajar " + a.nombre);
-        if (!escribir(claveArchivo(a.nombre), r.contenido)) throw new Error("no entra en la memoria del navegador");
+        if (!escribir(claveArchivo(a.nombre), r.contenido)) {
+          escribir(MEMORIA, a.nombre);
+          throw new Error("no entra en la memoria del navegador");
+        }
+        try { localStorage.removeItem(MEMORIA); } catch (e) { /* nada */ }
         escribir(claveArchivo(a.nombre) + "_subido", r.subido || "");
       });
     }));
@@ -327,6 +332,7 @@
       // con la hora de la última vez, sin parecer que la app está trabada
       if (enCurso) { txt = hora ? "☁ Sincronizado " + hora + " · buscando novedades…" : "☁ Sincronizando…"; color = "#64748b"; }
       else if (ultimoError) { txt = "☁ Error: " + ultimoError; color = "#b91c1c"; }
+      else if (localStorage.getItem(MEMORIA)) { txt = "☁ Memoria del navegador llena: tocá para ver"; color = "#b91c1c"; }
       else if (!navigator.onLine) { txt = "☁ Sin señal" + (n ? " · " + n + " cambio(s) por subir" : ""); color = "#92400e"; }
       else if (n) { txt = "☁ " + n + " cambio(s) por subir"; color = "#92400e"; }
       else txt = "☁ Sincronizado" + (hora ? " " + hora : "");
@@ -337,8 +343,19 @@
 
   // ── Arranque ──────────────────────────────────────────────────────────
 
+  /**
+   * Que el navegador no borre lo guardado. Safari (iPhone) borra la memoria de
+   * una página que no se abre en 7 días, salvo que esté agregada a la
+   * pantalla de inicio o tenga este permiso; sin esto el equipo pierde la
+   * conexión y vuelve a bajar todo.
+   */
+  function pedirPersistencia() {
+    try { if (config() && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) { /* nada */ }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     pintarEstado();
+    pedirPersistencia();
     // Lo que falta (historial, presupuesto base) no frena la página: el mapa y
     // las órdenes andan igual. Si el equipo está conectado, se baja en segundo
     // plano y se recarga una vez; si no, la pastilla avisa que falta conectar.
@@ -362,10 +379,30 @@
 
   g.IAgNube = {
     config: config,
-    conectar: function (url, clave) { escribir(CONFIG, { url: url.trim(), clave: clave.trim() }); pintarEstado(); },
+    conectar: function (url, clave) { escribir(CONFIG, { url: url.trim(), clave: clave.trim() }); pedirPersistencia(); pintarEstado(); },
+    /** Para la página Conectar: cuánto ocupa lo guardado y si el navegador lo puede borrar. */
+    diagnostico: function () {
+      var usado = 0, archivos = {};
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i), v = localStorage.getItem(k) || "";
+          usado += (k.length + v.length) * 2;
+          if (k.indexOf("iag_archivo_") === 0 && !/_subido$/.test(k)) archivos[k.slice(12)] = v.length * 2;
+        }
+      } catch (e) { /* nada */ }
+      var res = {
+        usadoMB: usado / 1048576, archivos: archivos, falta: localStorage.getItem(MEMORIA) || "",
+        pantallaInicio: !!(g.navigator.standalone || (g.matchMedia && g.matchMedia("(display-mode: standalone)").matches)),
+        ultima: localStorage.getItem(ULTIMA) || "", persistente: null,
+      };
+      if (!navigator.storage || !navigator.storage.persisted) return Promise.resolve(res);
+      return navigator.storage.persisted().then(function (p) { res.persistente = p; return res; }, function () { return res; });
+    },
     desconectar: function () { try { localStorage.removeItem(CONFIG); } catch (e) { /* nada */ } pintarEstado(); },
     probar: function () { return pedir({ accion: "probar" }); },
     subirArchivo: function (nombre, contenido) { return enviar({ accion: "archivo", nombre: nombre, contenido: contenido }); },
+    /** Foto (dataURL JPEG) a la carpeta «Remitos» del Drive: {ok, url}. */
+    subirFoto: function (nombre, dataUrl) { return enviar({ accion: "foto", nombre: nombre, contenido: String(dataUrl).replace(/^data:[^,]*,/, "") }); },
     bajarArchivos: function () { return bajarArchivos(ARCHIVOS); },
     ARCHIVOS: ARCHIVOS,
     sincronizar: sincronizar,

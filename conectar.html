@@ -36,7 +36,7 @@
   <span class="logo">I.Ag</span>
   <h1>Conectar con el Drive</h1>
   <span class="spacer"></span>
-  <a href="index.html?v=27">Inicio</a>
+  <a href="index.html?v=28">Inicio</a>
 </header>
 
 <div class="wrap">
@@ -73,15 +73,24 @@
   </div>
 
   <div class="block">
-    <h2>4 · Conectar otro equipo</h2>
+    <h2>4 · Este equipo</h2>
+    <p>Si cada vez que abrís la app vuelve a sincronizar todo o pide conectar, mirá acá.</p>
+    <div class="estado" id="estado-equipo">—</div>
+    <p style="font-size:13px;margin-top:8px"><b>En iPhone:</b> abrí el enlace en Safari (no desde WhatsApp), conectá y después
+      <b>Compartir → Agregar a pantalla de inicio</b>. Abrila siempre desde ese ícono: Safari borra la memoria de las páginas que no se abren en 7 días, salvo las de la pantalla de inicio.
+      Conectá en Safari <b>antes</b> de agregarla. Si el ícono pide conectar, borralo y volvé a agregarlo después de conectar.</p>
+  </div>
+
+  <div class="block">
+    <h2>5 · Conectar otro equipo</h2>
     <p>Mandá este enlace por WhatsApp a los otros usuarios. Al abrirlo, su equipo queda conectado. <b>Lleva la clave adentro:</b> no lo compartas fuera de la empresa.</p>
     <div class="enlace" id="enlace">Primero conectá este equipo.</div>
     <div class="fila"><button class="neutro" id="copiar">Copiar enlace</button><button class="neutro" id="compartir">Compartir…</button></div>
   </div>
 </div>
 
-<script src="usuario.js?v=27"></script>
-<script src="nube.js?v=27"></script>
+<script src="usuario.js?v=28"></script>
+<script src="nube.js?v=28"></script>
 <script>
 (function () {
   "use strict";
@@ -96,6 +105,22 @@
     $("enlace").textContent = c ? N.enlace() : "Primero conectá este equipo.";
     const n = N.pendientes();
     poner("estado-sync", c ? (n ? n + " cambio(s) por subir" : "Al día con el Drive") : "Sin conectar", c && !n ? "ok" : "");
+    pintarEquipo();
+  }
+
+  function pintarEquipo() {
+    if (!N.diagnostico) return;
+    N.diagnostico().then((d) => {
+      const arch = Object.keys(d.archivos).map((k) => k + " " + (d.archivos[k] / 1048576).toFixed(1) + " MB").join(" · ");
+      const partes = [
+        "Memoria usada: " + d.usadoMB.toFixed(1) + " MB" + (arch ? " (" + arch + ")" : ""),
+        d.falta ? "No entró «" + d.falta + "»: la memoria del navegador está llena" : "",
+        d.pantallaInicio ? "Abierta desde la pantalla de inicio" : "Abierta en el navegador",
+        d.persistente === true ? "el navegador no la borra" : d.persistente === false ? "el navegador la puede borrar si no se usa" : "",
+        d.ultima ? "última sincronización " + new Date(d.ultima).toLocaleString("es-AR") : "",
+      ].filter(Boolean);
+      poner("estado-equipo", partes.join(" · "), d.falta ? "mal" : "");
+    });
   }
 
   function probar() {

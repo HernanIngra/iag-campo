@@ -15,6 +15,10 @@
  *   _registros   uso interno de la app (presupuesto, pedidos). No se toca.
  *   _archivos    datos de la empresa que no van a GitHub. No se toca.
  *
+ * Carpeta «Remitos» (al lado de la planilla): las fotos de los remitos que
+ * se sacan en el registro de salida. Para crearla, la primera vez Google pide
+ * permiso para usar el Drive (versión 5).
+ *
  * Cada fila lleva en «rev» el momento de su último cambio (milisegundos). Una
  * edición a mano también lo actualiza (onEdit), y así la app se entera.
  */
@@ -95,6 +99,14 @@ function valor_(v) {
 }
 function nuevoId_() { return "h" + Utilities.getUuid().replace(/-/g, "").slice(0, 10); }
 
+/** Carpeta «Remitos» en la misma carpeta que la planilla (se crea la primera vez). */
+function carpetaRemitos_() {
+  const padres = DriveApp.getFileById(libro_().getId()).getParents();
+  const donde = padres.hasNext() ? padres.next() : DriveApp.getRootFolder();
+  const hay = donde.getFoldersByName("Remitos");
+  return hay.hasNext() ? hay.next() : donde.createFolder("Remitos");
+}
+
 function respuesta_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -137,7 +149,7 @@ function doGet(e) {
   if (p.accion === "probar") {
     Object.keys(TABLAS).forEach(tabla_);
     stock_();
-    return respuesta_({ ok: true, planilla: libro_().getName(), version: 4 });
+    return respuesta_({ ok: true, planilla: libro_().getName(), version: 5 });
   }
 
   if (p.accion === "archivo") {
@@ -246,6 +258,12 @@ function doPost(e) {
       for (let i = 0, n = 0; i < texto.length; i += PARTE, n++) partes.push([d.nombre, String(n), texto.slice(i, i + PARTE), ahora]);
       if (partes.length) h.getRange(h.getLastRow() + 1, 1, partes.length, 4).setNumberFormat("@").setValues(partes);
       return respuesta_({ ok: true, nombre: d.nombre, partes: partes.length, caracteres: texto.length });
+    }
+    // Foto de un remito: va a la carpeta «Remitos», al lado de la planilla
+    if (d.accion === "foto") {
+      const bytes = Utilities.base64Decode(String(d.contenido || ""));
+      const archivo = carpetaRemitos_().createFile(Utilities.newBlob(bytes, "image/jpeg", String(d.nombre || "remito.jpg")));
+      return respuesta_({ ok: true, url: archivo.getUrl(), id: archivo.getId() });
     }
     return respuesta_({ ok: false, error: "acción desconocida" });
   } catch (err) {

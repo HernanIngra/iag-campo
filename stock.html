@@ -61,6 +61,39 @@
   }
   input:focus, select:focus, textarea:focus { border-color: #93c5fd; background: #fff; }
   input[readonly] { background: #f1f5f9; color: #64748b; }
+  /* Dosis: en el teléfono la tabla se aprieta; que entren el número y las flechas */
+  .in-dosis { min-width: 116px; padding: 8px 4px 8px 8px; text-align: right; font-variant-numeric: tabular-nums; }
+  /*
+   * Teléfono: la tabla de productos de la orden y la del registro de salida
+   * pasan a una tarjeta por fila (antes la dosis quedaba fuera de la pantalla,
+   * a la derecha). Cada celda lleva su título.
+   */
+  @media (max-width: 760px) {
+    #ot-prod-tbl thead, #rs-tbl thead { display: none; }
+    #ot-prod-tbl, #ot-prod-tbl tbody, #rs-tbl, #rs-tbl tbody { display: block; }
+    #ot-prod-tbl tr, #rs-tbl tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; }
+    #ot-prod-tbl td, #rs-tbl td { display: block; padding: 0; border: none; text-align: left; min-width: 0; }
+    #ot-prod-tbl td[colspan] { grid-column: 1 / -1; }
+    #ot-prod-tbl td:nth-child(1), #ot-prod-tbl td:nth-child(6) { grid-column: 1 / -1; }
+    #ot-prod-tbl td:nth-child(7) { grid-column: 1 / -1; text-align: right; }
+    #ot-prod-tbl td:nth-child(2)::before { content: "Dosis"; }
+    #ot-prod-tbl td:nth-child(3)::before { content: "Unidad"; }
+    #ot-prod-tbl td:nth-child(4)::before { content: "Necesidad"; }
+    #ot-prod-tbl td:nth-child(5)::before { content: "Retirar"; }
+    #ot-prod-tbl td:nth-child(6)::before { content: "Sale de"; }
+    #rs-tbl tr { grid-template-columns: 34px 1fr 1fr; }
+    #rs-tbl td:nth-child(2) { grid-column: 2 / -1; }
+    #rs-tbl td:nth-child(3) { grid-column: 2 / 3; }
+    #rs-tbl td:nth-child(4) { grid-column: 1 / -1; }
+    #rs-tbl td:nth-child(5) { grid-column: 1 / 3; }
+    #rs-tbl td:nth-child(3)::before { content: "Falta"; }
+    #rs-tbl td:nth-child(4)::before { content: "De qué depósito"; }
+    #rs-tbl td:nth-child(5)::before { content: "Cantidad"; }
+    #ot-prod-tbl td::before, #rs-tbl td::before { display: block; font-size: 10.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+    #ot-prod-tbl td:nth-child(1)::before, #ot-prod-tbl td:nth-child(7)::before, #rs-tbl td:nth-child(1)::before, #rs-tbl td:nth-child(2)::before, #rs-tbl td:nth-child(6)::before { content: none; }
+    #ot-prod-tbl .in-dosis { min-width: 0; font-size: 17px; }
+    #rs-tbl select { max-width: 100% !important; width: 100%; }
+  }
   select { cursor: pointer; }
 
   /* ── Buttons ───────────────────────────────────────────────────────────── */
@@ -246,7 +279,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=27" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=28" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -321,8 +354,10 @@
           <button class="link-add" id="ot-add-dep">＋ Nuevo depósito</button>
         </div>
         <div class="field">
-          <label class="fl">Responsable / aplicador</label>
-          <input type="text" id="ot-responsable" placeholder="Nombre del aplicador" />
+          <label class="fl">Aplicador</label>
+          <select id="ot-aplicador"></select>
+          <input type="text" id="ot-responsable" placeholder="Nombre del aplicador" style="display:none;margin-top:6px" />
+          <div class="fu">Recibe la orden en PDF por WhatsApp</div>
         </div>
         <div class="field">
           <label class="fl">Prueba</label>
@@ -342,6 +377,11 @@
             <option>Curado de semilla</option>
             <option>Otra</option>
           </select>
+        </div>
+        <div class="field" id="campo-variedad" style="display:none">
+          <label class="fl">Variedad / híbrido <span class="fu">siembra</span></label>
+          <input type="text" id="ot-variedad" placeholder="Ej. DM75i75" />
+          <div class="fu">Viene de la planificación; al confirmar la siembra, el lote pasa a tener este cultivo</div>
         </div>
         <div class="field" id="campo-mojado">
           <label class="fl">Mojado <span class="fu">l/ha</span></label>
@@ -400,7 +440,7 @@
           <thead>
             <tr>
               <th style="min-width:230px">Producto</th>
-              <th style="width:105px">Dosis</th>
+              <th style="min-width:128px">Dosis</th>
               <th style="width:95px">Unidad</th>
               <th class="num" style="width:110px">Necesidad</th>
               <th class="num" style="width:130px">Retirar</th>
@@ -449,13 +489,13 @@
       <div class="hint" id="ot-estado-nota" style="margin-top:12px"></div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="ot-save">Guardar orden</button>
-        <button class="btn btn-primary" id="ot-remito">🚚 Remito de salida</button>
-        <button class="btn btn-primary" id="ot-reportar" style="display:none">✍ Reportar aplicación</button>
+        <button class="btn btn-primary" id="ot-remito">🚚 Registro de salida</button>
         <button class="btn btn-green" id="ot-confirm">Confirmar aplicación</button>
         <button class="btn btn-green" id="ot-retorno" style="display:none">↩ Confirmar retorno</button>
         <button class="btn btn-ghost" id="ot-print">📄 PDF para el aplicador</button>
         <button class="btn btn-green" id="ot-compartir">📲 Compartir (WhatsApp)</button>
         <button class="btn btn-ghost" id="ot-clear">Limpiar</button>
+        <button class="btn btn-ghost" id="ot-siembra">🌱 Nueva orden de siembra</button>
       </div>
     </div>
 
@@ -534,7 +574,7 @@
         <div class="block-num">⇄</div>
         <div>
           <div class="block-title">En tránsito por zona</div>
-          <div class="block-sub">Salió del galpón con un remito y todavía no se confirmó la aplicación. Va en la zona de los lotes de la orden.</div>
+          <div class="block-sub">Salió del galpón con un registro de salida y todavía no se confirmó la aplicación. Va en la zona de los lotes de la orden.</div>
         </div>
       </div>
       <div id="transito-zonas"></div>
@@ -567,7 +607,7 @@
         <div class="block-num">◔</div>
         <div>
           <div class="block-title">Rincón · envases abiertos</div>
-          <div class="block-sub">El substock de El Mistol y Lartirigoyen: lo que volvió de las aplicaciones en envases empezados. La próxima orden de la zona lo usa primero.</div>
+          <div class="block-sub">El substock de los depósitos propios (El Mistol, Larti-Aportes, Larti-TPA): lo que volvió de las aplicaciones en envases empezados. La próxima orden de la zona lo usa primero.</div>
         </div>
       </div>
       <div id="abiertos-deps"></div>
@@ -701,7 +741,7 @@
             <option value="compra">Compra</option>
             <option value="inicial">Stock inicial</option>
             <option value="venta">Venta</option>
-            <option value="remito">Remito de salida</option>
+            <option value="remito">Salida para una orden</option>
             <option value="retorno">Retorno</option>
             <option value="uso">Uso (OT)</option>
             <option value="rincon">Reingreso al Rincón</option>
@@ -926,18 +966,19 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=27"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=27"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=27"></script>
-<script src="lotes-tarpuy.js?v=27" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=27" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=27"></script>
-<script src="senasa-catalogo.js?v=27" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=27" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=28"></script>
+<script src="campania.js?v=28"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=28"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=28"></script>
+<script src="lotes-tarpuy.js?v=28" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=28" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=28"></script>
+<script src="senasa-catalogo.js?v=28" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=28" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=27" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=27"></script>
-<script src="nube.js?v=27"></script>
+<script src="semillas-catalogo.js?v=28" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=28"></script>
+<script src="nube.js?v=28"></script>
 
 <script>
 (function () {
@@ -1099,7 +1140,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   const DEPOSITOS_SEED = [
     // [nombre, ubicación, tipo, zona]
     ["El Mistol",    "Norte",       "propio",  "NORTE"],
-    ["Lartirigoyen", "Las Lajitas · socio de la empresa", "propio", "LAJITAS"],
+    // Lartirigoyen guarda dos cosas distintas (2/11): lo que aporta a la
+    // sociedad y lo que TPA le compra como a cualquier agronomía
+    ["Larti-Aportes", "Las Lajitas · aportes de Lartirigoyen a la sociedad", "propio", "LAJITAS"],
+    ["Larti-TPA",     "Las Lajitas · compras de TPA guardadas en Lartirigoyen", "propio", "LAJITAS"],
     ["Siner",        "Las Lajitas", "tercero", "LAJITAS"],
     ["NECA",         "Las Lajitas", "tercero", "LAJITAS"],
     ["Barracón",     "Las Lajitas", "tercero", "LAJITAS"],
@@ -1115,6 +1159,15 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    * depósitos: no es un lugar, es un estado.
    */
   const TRANSITO = "transito";
+  /**
+   * Desde el 2/11 son dos: lo que salió hacia el Norte y hacia Lajitas
+   * («En tránsito Norte» / «En tránsito Lajitas» en la planilla). TRANSITO
+   * queda para lo viejo que no se pudo asignar a una zona.
+   */
+  const transitoDe = (zona) => zona ? TRANSITO + "-" + zona.toLowerCase() : TRANSITO;
+  const esTransito = (id) => id === TRANSITO || String(id || "").indexOf(TRANSITO + "-") === 0;
+  const zonaDeTransito = (id) => esTransito(id) && id !== TRANSITO ? id.slice(TRANSITO.length + 1).toUpperCase() : "";
+  const TRANSITOS = () => Object.keys(ZONAS).map(transitoDe);
 
   // La identidad vive en usuario.js, compartida con los otros módulos
   const usuarioActual = () => window.IAgUsuario.actual();
@@ -1130,7 +1183,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   const MOV_LABEL = {
     compra: "Compra", venta: "Venta", uso: "Uso (OT)",
     ajuste_pos: "Ajuste +", ajuste_neg: "Merma −", transferencia: "Transferencia",
-    apertura: "Apertura", remito: "Remito de salida", retorno: "Retorno", rincon: "Reingreso al Rincón", inicial: "Stock inicial",
+    apertura: "Apertura", remito: "Salida (OT)", retorno: "Retorno", rincon: "Reingreso al Rincón", inicial: "Stock inicial",
   };
   const MOV_BADGE = {
     compra: "b-green", venta: "b-blue", uso: "b-amber",
@@ -1165,7 +1218,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) { S = JSON.parse(raw); migrar(); return; }
+      // Si la migración cambió algo (tránsito por zona, Larti, sociedades), se guarda: así llega a la planilla
+      if (raw) { S = JSON.parse(raw); migrar(); if (JSON.stringify(S) !== raw) save(); return; }
     } catch (e) { /* datos corruptos → re-sembramos */ }
     S = seed();
     migrar();
@@ -1183,6 +1237,23 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       if (!d) S.depositos.push({ id: idDeposito(nombre), nombre, ubicacion, tipo, zona });
       else if (!d.zona) d.zona = zona;
     });
+    // El depósito «Lartirigoyen» se partió en Larti-Aportes y Larti-TPA: lo que
+    // había era el pedido de aportes del 15/10, así que va a Aportes
+    remapDeposito(idDeposito("Lartirigoyen"), idDeposito("Larti-Aportes"));
+    // Tipos mal cargados en la planilla de stock del Norte (revisados contra
+    // SENASA y el historial, 2/11). Una sola vez: después manda la planilla.
+    if (!S.tipos0211) {
+      const BIEN = { "nugen": "Coadyuvante", "fluroxipir-28": "Herbicida" };
+      S.catalogo.forEach((p) => { const t = BIEN[slug(p.marca)]; if (t && p.tipo !== t) p.tipo = t; });
+      S.tipos0211 = true;
+    }
+    // Campos en sociedad con Lartirigoyen (dicho por el cliente el 2/11): todo
+    // el Norte (El Mistol es propio pero se explota en sociedad) y, en Lajitas,
+    // Santa Escolástica y San Florián. Una sola vez: después se cambia en Config.
+    if (!S.sociedades2611) {
+      S.camposSociedad = Array.from(new Set((S.camposSociedad || []).concat(["Tarpuy-EM", "Tarpuy-LI", "Tarpuy-SE", "Tarpuy-SF"])));
+      S.sociedades2611 = true;
+    }
     S.remitoSeq = S.remitoSeq || 1;
     if (!Array.isArray(S.planificacion)) S.planificacion = [];
     // "Por llegar" (no contaba en el stock) pasó a "sin verificar" (cuenta, con un
@@ -1195,6 +1266,30 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // Las compras de ejemplo que traía la versión de prueba no son stock real
     S.movimientos = (S.movimientos || []).filter((m) => !(m.tipo === "compra" && m.nota === "Stock inicial de campaña"));
     sincronizarLotes();
+    // Tránsito por zona (2/11): lo que estaba en «En tránsito» pasa al de la zona de su orden
+    S.movimientos.forEach((m) => {
+      if (m.deposito !== TRANSITO || !m.otId) return;
+      const o = S.ordenes.find((x) => x.id === m.otId);
+      const z = o ? zonaDeOrden(o) : "";
+      if (z) m.deposito = transitoDe(z);
+    });
+  }
+
+  /** Todo lo que apuntaba a un depósito pasa a otro, y el viejo se borra. */
+  function remapDeposito(viejo, nuevo) {
+    if (!S.depositos.some((d) => d.id === viejo)) return;
+    const m = (id) => (id === viejo ? nuevo : id);
+    S.movimientos.forEach((x) => { x.deposito = m(x.deposito); });
+    S.ordenes.forEach((o) => {
+      o.deposito = m(o.deposito);
+      (o.items || []).forEach((it) => {
+        it.origen = m(it.origen); it.origenRemito = m(it.origenRemito);
+        (it.retiros || []).forEach((r) => { r.dep = m(r.dep); });
+        (it.salidas || []).forEach((r) => { r.dep = m(r.dep); });
+      });
+    });
+    (S.pedidos || []).forEach((pd) => { pd.deposito = m(pd.deposito); });
+    S.depositos = S.depositos.filter((d) => d.id !== viejo);
   }
 
   /**
@@ -1878,9 +1973,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
   // ── Lookups ────────────────────────────────────────────────────────────
   const prodById = (id) => S.catalogo.find((p) => p.id === id);
-  const depById  = (id) => id === TRANSITO
-    ? { id: TRANSITO, nombre: "En tránsito", tipo: "transito", zona: "" }
+  const depById  = (id) => esTransito(id)
+    ? { id, nombre: "En tránsito" + (zonaDeTransito(id) ? " " + (ZONAS[zonaDeTransito(id)] || zonaDeTransito(id)) : ""), tipo: "transito", zona: zonaDeTransito(id) }
     : S.depositos.find((d) => d.id === id);
+  /** El tránsito de una orden: el de la zona de sus lotes. */
+  const transitoDeOT = (o) => transitoDe(zonaDeOrden(o));
   const loteById = (id) => S.lotes.find((l) => l.id === id);
 
   function signo(tipo) {
@@ -1928,6 +2025,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   function depositosDeZona(zona) {
     return S.depositos.filter((d) => (d.zona || "") === zona);
   }
+  /** Los aportes del socio son de la sociedad: sólo abastecen a campos en sociedad. */
+  const esAportes = (d) => !!d && /aporte/i.test(d.nombre || "");
+  const sirveA = (o) => (d) => !esAportes(d) || (o && esSociedad(o));
 
   /**
    * Depósitos de la zona donde se buscan envases abiertos: el propio primero.
@@ -1935,13 +2035,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    * se juntan; pero si algún otro de la zona tiene un envase abierto, también vale.
    */
   function depositosConAbiertos(zona) {
-    return (zona ? depositosDeZona(zona) : S.depositos).slice()
+    return (zona ? depositosDeZona(zona) : S.depositos).filter(sirveA(OT))
       .sort((a, b) => (b.tipo === "propio") - (a.tipo === "propio"));
   }
 
-  /** Depósito adonde vuelve el remanente: el propio de la zona. */
+  /**
+   * Depósito adonde vuelve el remanente: el propio de donde salió (un aporte
+   * vuelve a Larti-Aportes) o, si salió de un comercio, el propio de la zona.
+   */
   function depositoDeRetorno(zona, porDefecto) {
-    const propio = (zona ? depositosDeZona(zona) : S.depositos).find((d) => d.tipo === "propio");
+    const d = depById(porDefecto);
+    if (d && d.tipo === "propio" && (!zona || d.zona === zona)) return d.id;
+    const propio = (zona ? depositosDeZona(zona) : S.depositos).filter((x) => !esAportes(x)).find((x) => x.tipo === "propio");
     return propio ? propio.id : porDefecto;
   }
 
@@ -1970,8 +2075,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const alcanza = (d) => hay(d) >= nec - 0.0001;
     const ordenar = (lista) => lista.slice().sort((a, b) =>
       ((b.tipo === "propio") - (a.tipo === "propio")) || (hay(b) - hay(a)));
-    const enZona = ordenar(zona ? depositosDeZona(zona) : S.depositos);
-    const otras = zona ? ordenar(S.depositos.filter((d) => (d.zona || "") !== zona)) : [];
+    const enZona = ordenar((zona ? depositosDeZona(zona) : S.depositos).filter(sirveA(OT)));
+    const otras = zona ? ordenar(S.depositos.filter((d) => (d.zona || "") !== zona).filter(sirveA(OT))) : [];
     const res = (estado, dep, extra) => Object.assign({
       estado, dep: dep || null, hay: dep ? hay(dep) : 0,
       falta: dep ? Math.max(0, nec - hay(dep)) : nec,
@@ -1980,7 +2085,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (nec <= 0.0001) return res("ok", null, { soloAbiertos: true });
     if (it.origen) {
       const d = depById(it.origen);
-      if (d && d.id !== TRANSITO) {
+      if (d && !esTransito(d.id)) {
         const deOtra = !!zona && (d.zona || "") !== zona;
         return res(alcanza(d) ? (deOtra ? "traer" : "ok") : "comprar", d, { manual: true });
       }
@@ -2191,6 +2296,24 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const nom = l ? slug(l.nombre) : "";
     return (S.planificacion || []).find((p) => p.cultivo && (p.loteId === loteId || (nom && slug(p.lote || "") === nom)));
   };
+  /**
+   * Cultivo del lote para una orden: antes de sembrar, el presupuestado
+   * (Planificación); después de la orden de siembra aplicada, el sembrado.
+   */
+  const cultivoActual = (loteId) => {
+    const sem = window.IAgCampania.sembrado(S, loteId);
+    if (sem) return { cultivo: sem.cultivo, variedad: sem.variedad, sembrado: true };
+    const p = planDe(loteId);
+    return p ? { cultivo: p.cultivo, variedad: p.variedad || "", sembrado: false } : null;
+  };
+  /** Si todos los lotes de la orden tienen el mismo cultivo, la orden lo toma (salvo que se haya elegido a mano). */
+  function sugerirCultivo() {
+    const cs = OT.lotes.map((x) => cultivoActual(x.loteId)).filter(Boolean);
+    const cults = Array.from(new Set(cs.map((c) => c.cultivo)));
+    if (cults.length === 1 && !OT.cultivoAMano) OT.cultivo = cultivoDeOT(cults[0]);
+    const vars = Array.from(new Set(cs.map((c) => c.variedad).filter(Boolean)));
+    if (vars.length === 1 && !OT.variedadAMano) OT.variedad = vars[0];
+  }
   /** «Maíz+brachiaria», «Maiz/Braquiaria» → «Maíz» (las opciones de la orden). */
   function cultivoDeOT(c) {
     const t = sinAcentos(c);
@@ -2251,6 +2374,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         PICKER = "elegir";
         CAMPO_OT = (loteById(OT.lotes[OT.lotes.length - 1].loteId) || {}).campo || "";
         LOTES_ARRIBA = new Set(OT.lotes.map((x) => x.loteId));
+    sugerirCultivo();
         renderLotePicker();
       });
       if ($("ot-mas-campos")) $("ot-mas-campos").addEventListener("click", () => { PICKER = "elegir"; CAMPO_OT = ""; renderLotePicker(); });
@@ -2312,7 +2436,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       <input type="checkbox" ${sel ? "checked" : ""} data-check="${l.id}" />
       <span class="lote-info">
         <span class="lote-name">${esc(l.nombre)}</span>
-        <span class="lote-meta">${l.sinMapa || (!num(l.ha) && /BANQ$/.test(l.nombre)) ? "banquinas · cargar las ha" : fmt(l.ha, 1) + " ha"}${planDe(l.id) ? " · " + esc(planDe(l.id).cultivo) : l.cultivo ? " · " + esc(l.cultivo) : ""}</span>
+        <span class="lote-meta">${l.sinMapa || (!num(l.ha) && /BANQ$/.test(l.nombre)) ? "banquinas · cargar las ha" : fmt(l.ha, 1) + " ha"}${cultivoActual(l.id) ? " · " + esc(cultivoActual(l.id).cultivo) + (cultivoActual(l.id).sembrado ? " (sembrado)" : "") : l.cultivo ? " · " + esc(l.cultivo) : ""}</span>
         ${parcial ? `<span class="lote-parcial">parcial: ${fmt(num(sel.ha), 1)} de ${fmt(l.ha, 1)} ha</span>` : ""}
       </span>
       <span class="lote-ha">${sel ? `<input type="number" value="${sel.ha}" min="0" step="0.1" data-ha="${l.id}" />` : ""}</span>
@@ -2337,8 +2461,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         // El primer lote elegido: se esconde todo lo demás y quedan los botones para sumar
         if (cb.checked && OT.lotes.length === 1) PICKER = "elegidos";
         // El cultivo de la orden sale de la planificación, si todos los lotes coinciden
-        const cults = Array.from(new Set(OT.lotes.map((x) => (planDe(x.loteId) || {}).cultivo).filter(Boolean)));
-        if (cults.length === 1 && !OT.cultivoAMano) OT.cultivo = cultivoDeOT(cults[0]);
+        sugerirCultivo();
         renderOT();
       });
     });
@@ -2494,7 +2617,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
                   : '<div class="dosis-no">Sin dosis de registro publicadas</div>') : ""}
           ${htmlEnvase(p)}
         </td>
-        <td><input type="number" min="0" step="0.001" value="${it.dosis}" data-dosis="${i}" /></td>
+        <td><input type="number" min="0" step="0.001" inputmode="decimal" value="${it.dosis}" data-dosis="${i}" class="in-dosis" /></td>
         <td>
           <select data-unidad="${i}">
             ${unidades.map((u) => `<option ${u === it.unidad ? "selected" : ""}>${u}</option>`).join("")}
@@ -2624,8 +2747,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-campania").value = OT.campania;
     if (OT.cultivo) cultivoDeOT(OT.cultivo);   // que exista la opción (mungo, chía…)
     $("ot-cultivo").value = OT.cultivo;
-    $("ot-responsable").value = OT.responsable;
+    pintarAplicador();
     $("ot-labor").value = OT.labor;
+    const siembra = /siembra/i.test(OT.labor || "");
+    $("campo-variedad").style.display = siembra ? "" : "none";
+    $("ot-variedad").value = OT.variedad || "";
     $("ot-mojado").value = OT.mojado;
     $("ot-tanque").value = OT.tanque;
     $("ot-obs").value = OT.obs;
@@ -2642,8 +2768,29 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const nota = $("ot-deposito-nota");
     nota.textContent = zonas.size > 1
       ? "Los lotes son de zonas distintas (" + Array.from(zonas).map((z) => ZONAS[z] || z).join(" y ") + "): separá la orden"
-      : zona ? depositosDeZona(zona).map((d) => d.nombre).join(" · ") : "";
+      : zona ? depositosDeZona(zona).filter(sirveA(OT)).map((d) => d.nombre).join(" · ") : "";
     nota.style.color = zonas.size > 1 ? "#be123c" : "#94a3b8";
+  }
+
+  /**
+   * Aplicadores de la zona de la orden (usuario.js) y «Otro», que abre el
+   * casillero para escribir el nombre. Sin zona todavía: los de las dos.
+   */
+  function pintarAplicador() {
+    const zona = zonaDeOT();
+    const A = window.IAgUsuario.APLICADORES || {};
+    const lista = zona ? (A[zona] || []) : Object.keys(A).reduce((a, z) => a.concat(A[z]), []);
+    const r = OT.responsable || "";
+    const otro = !!r && lista.indexOf(r) === -1;
+    $("ot-aplicador").innerHTML = '<option value="">Elegí…</option>' +
+      lista.map((x) => `<option ${x === r ? "selected" : ""}>${esc(x)}</option>`).join("") +
+      `<option value="__otro" ${otro ? "selected" : ""}>Otro…</option>`;
+    $("ot-responsable").style.display = otro || $("ot-aplicador").value === "__otro" ? "" : "none";
+    $("ot-responsable").value = otro ? r : "";
+  }
+  function leerAplicador() {
+    const v = $("ot-aplicador").value;
+    return v === "__otro" ? $("ot-responsable").value.trim() : v;
   }
 
   const ESTADO_OT = {
@@ -2656,6 +2803,23 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     ? { txt: "Falta retorno", badge: "b-amber" } : (ESTADO_OT[o.estado] || ESTADO_OT.borrador);
   const nombreUsuario = (id) => { const x = window.IAgUsuario.USUARIOS.find((u) => u.id === id); return x ? x.nombre : (id || ""); };
   const ZONA_TXT = (z) => ZONAS[z] ? "el encargado de " + ZONAS[z] : "el encargado de la zona";
+
+  /** Las salidas de una orden, con el remito en papel y el enlace a la foto. */
+  function htmlSalidas(o) {
+    const ss = o.salidas || [];
+    if (!ss.length) return "";
+    const pend = leerFotosPend();
+    return '<div style="margin-top:6px">' + ss.map((x) => {
+      const prods = (o.items || []).map((it) => {
+        const c = (it.retiros || []).filter((r) => r.salida === x.id).reduce((a, r) => a + num(r.cant), 0);
+        const p = prodById(it.prod);
+        return c > 0.0001 && p ? esc(p.marca) + " " + fmt(c, 2) : "";
+      }).filter(Boolean).join(", ");
+      const foto = x.foto && x.foto !== "pendiente" ? ` · <a href="${esc(x.foto)}" target="_blank" rel="noopener">📷 foto</a>`
+        : x.foto === "pendiente" || pend[x.id] ? " · 📷 foto por subir" : "";
+      return `<div>🚚 <strong>${esc(x.numero)}</strong> · ${esc(x.fecha)}${x.remito ? " · remito " + esc(x.remito) : ""}${foto}${prods ? ` <span style="color:#64748b">(${prods})</span>` : ""}</div>`;
+    }).join("") + "</div>";
+  }
 
   function aplicarPermisos() {
     const u = usuarioActual();
@@ -2675,15 +2839,15 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
             : mezcla ? "Una orden no puede tener lotes de Norte y de Lajitas"
             : puede("emitirOT") ? "Esos lotes son de otra zona" : "Las órdenes las emite el encargado");
     const zona = zonaDeOT();
-    poner("ot-remito", estado === "borrador" && !mezcla && puedeEnZona("remitir", zona),
+    // La salida puede ir en tandas: mientras falte retirar algo, sigue habilitada
+    const faltan = estado === "transito" ? faltaRetirar(OT) : [];
+    poner("ot-remito", (estado === "borrador" || faltan.length) && !mezcla && puedeEnZona("remitir", zona),
           mezcla ? "Una orden no puede tener lotes de Norte y de Lajitas"
-            : estado === "borrador" ? "El producto lo retira el equipo o " + ZONA_TXT(zona) : "El producto ya salió con el remito");
-    // El equipo reporta lo que aplicó; el encargado lo confirma (o reporta y confirma él)
-    poner("ot-reportar", estado === "transito" && puedeEnZona("reportar", zona),
-          estado === "borrador" ? "Primero el remito de salida" : estado === "transito" ? "La reporta el equipo de " + (ZONAS[zona] || "la zona") : "Ya está reportada");
-    if ($("ot-reportar")) $("ot-reportar").style.display = estado === "transito" && puede("reportar") ? "" : "none";
+            : estado === "borrador" || faltan.length ? "La salida la registra " + ZONA_TXT(zona) : "Ya salió todo lo de la orden");
+    $("ot-remito").textContent = faltan.length ? "🚚 Completar salida (faltan " + faltan.length + ")" : "🚚 Registro de salida";
+    $("ot-remito").style.display = estado === "aplicada" || (estado !== "borrador" && !faltan.length) ? "none" : "";
     poner("ot-confirm", (estado === "transito" || estado === "reportada") && puedeEnZona("confirmarOT", zona),
-          estado === "borrador" ? "Primero el remito de salida: el producto tiene que salir del galpón"
+          estado === "borrador" ? "Primero el registro de salida: el producto tiene que salir del galpón"
             : estado === "aplicada" ? "La orden ya está aplicada" : "La aplicación la confirma " + ZONA_TXT(zona));
     if ($("ot-confirm")) $("ot-confirm").textContent = estado === "reportada" ? "Confirmar la aplicación reportada" : "Confirmar aplicación";
     const conRetorno = estado === "aplicada" && OT.retorno === "pendiente";
@@ -2704,15 +2868,16 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const nota = $("ot-estado-nota");
     if (nota) {
       nota.innerHTML = estado === "transito"
-        ? "<strong>En tránsito</strong> · remito " + esc(OT.remito ? OT.remito.numero : "") +
-          ". El producto salió del galpón; se da de baja al confirmar la aplicación."
+        ? "<strong>En tránsito</strong>. El producto salió del galpón; se da de baja al confirmar la aplicación." +
+          (faltan.length ? " <strong>Falta retirar</strong>: " + faltan.map((x) => esc(x.p.marca) + " " + fmt(x.falta, 2) + " " + esc(x.p.unidad)).join(" · ") + "." : "") +
+          htmlSalidas(OT)
         : estado === "reportada"
         ? "<strong>Aplicación reportada</strong>" + (OT.reporte ? " por " + esc(nombreUsuario(OT.reporte.por)) + " · " + fmt(num(OT.reporte.haReal), 1) + " ha" : "") +
           ". Falta que la confirme " + ZONA_TXT(zonaDeOT()) + "."
         : estado === "aplicada"
           ? "<strong>Aplicada</strong>" + (OT.haReal ? " sobre " + fmt(OT.haReal, 1) + " ha" : "") + ". Lo usado ya está dado de baja." +
-            (OT.retorno === "pendiente" ? " <strong>Falta confirmar el retorno</strong> del remanente, que sigue en tránsito." : "")
-          : "El stock no se mueve al guardar la orden: baja con el <strong>remito de salida</strong> y queda en tránsito hasta confirmar la aplicación.";
+            (OT.retorno === "pendiente" ? " <strong>Falta confirmar el retorno</strong> del remanente, que sigue en tránsito." : "") + htmlSalidas(OT)
+          : "El stock no se mueve al guardar la orden: baja con el <strong>registro de salida</strong> y queda en tránsito hasta confirmar la aplicación.";
     }
 
     const btnMv = $("mv-add");
@@ -2771,7 +2936,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         : o.estado === "reportada"
           ? `<button class="link del" data-ot-anular="${o.id}" style="margin-left:8px">Anular reporte</button>`
         : o.estado === "transito"
-          ? `<button class="link del" data-ot-anular="${o.id}" style="margin-left:8px">Anular remito</button>`
+          ? `<button class="link del" data-ot-anular="${o.id}" style="margin-left:8px">Anular salida</button>`
           : `<button class="link del" data-ot-del="${o.id}" style="margin-left:8px">Borrar</button>`;
       return `<tr>
         <td><strong>${esc(o.numero)}</strong>${o.prueba ? '<span class="badge b-amber" style="margin-left:6px">PRUEBA</span>' : ""}${o.remito ? `<div style="font-size:10.5px;color:#94a3b8">${esc(o.remito.numero)}</div>` : ""}</td>
@@ -2845,14 +3010,13 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (!cont) return;
     const u = usuarioActual();
     const mias = ordenesDelUsuario();
-    $("pend-sub").textContent = u && u.rol === "equipo"
-      ? "Las de " + (ZONAS[u.zona] || u.zona) + ": retirar el producto y reportar la aplicación"
-      : u && u.rol === "encargado"
-      ? "Las de " + (ZONAS[u.zona] || u.zona) + ": confirmar las aplicaciones reportadas y la devolución del remanente"
+    $("pend-sub").textContent = u && u.rol === "encargado"
+      ? "Las de " + (ZONAS[u.zona] || u.zona) + ": registrar la salida del producto, confirmar la aplicación y la devolución del remanente"
       : "Emitidas y todavía no cerradas, según en qué paso están";
     const grupos = [
-      { t: "Para retirar", s: "falta el remito de salida", f: (o) => (o.estado || "borrador") === "borrador" },
-      { t: "En tránsito", s: "falta reportar la aplicación", f: (o) => o.estado === "transito" },
+      { t: "Para retirar", s: "falta registrar la salida del producto", f: (o) => (o.estado || "borrador") === "borrador" },
+      { t: "En tránsito", s: "falta confirmar la aplicación", f: (o) => o.estado === "transito" },
+      // Reportadas por los equipos antes del 2/11: sólo falta que el encargado las confirme
       { t: "Aplicación reportada", s: "falta que la confirme el encargado", f: (o) => o.estado === "reportada" },
       { t: "Retorno pendiente", s: "falta confirmar lo que volvió", f: (o) => o.estado === "aplicada" && o.retorno === "pendiente" },
     ];
@@ -2900,7 +3064,6 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const ORDEN = {
       gerente: ["ot", "pend", "stock", "mov", "config"],
       encargado: ["ot", "pend", "stock", "mov"],
-      equipo: ["pend", "ot"],
       oficina: ["stock", "mov", "config"],
     }[rol] || ["ot", "pend", "stock", "mov", "config"];
     const tabs = document.querySelector(".tabs");
@@ -2950,7 +3113,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     let quitar, estado, msg;
     if (o.estado === "reportada") {
       // El reporte no movió stock: se descarta y vuelve a «en tránsito»
-      if (!confirm("Anular el reporte de " + o.numero + "? Vuelve a quedar para reportar.")) return;
+      if (!confirm("Anular el reporte de " + o.numero + "? Vuelve a quedar en tránsito, para confirmar.")) return;
       delete o.reporte;
       (o.items || []).forEach((it) => { delete it.usado; delete it.remanente; delete it.dosisReal; });
       o.estado = "transito";
@@ -2964,12 +3127,15 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       delete o.retorno;
     } else {
       const txt = o.estado === "transito"
-        ? "Anular el remito de " + o.numero + "? El producto vuelve al depósito de donde salió."
+        ? "Anular la salida de " + o.numero + "? El producto vuelve al depósito de donde salió."
         : "Anular la aplicación de " + o.numero + "? Se devuelve el producto al stock.";
       if (!confirm(txt)) return;
       quitar = (m) => m.otId === id;
-      estado = "borrador"; msg = o.estado === "transito" ? "Remito anulado — el producto volvió al depósito" : "Aplicación anulada — stock devuelto";
-      if (o.estado === "transito") delete o.remito;
+      estado = "borrador"; msg = o.estado === "transito" ? "Salida anulada — el producto volvió al depósito" : "Aplicación anulada — stock devuelto";
+      if (o.estado === "transito") {
+        delete o.remito; delete o.salidas;
+        (o.items || []).forEach((it) => { delete it.retiros; delete it.retirado; delete it.origenRemito; });
+      }
     }
     S.movimientos = S.movimientos.filter((m) => !quitar(m));
     o.estado = estado;
@@ -2990,8 +3156,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (mezclaZonas(OT)) { toast("Una orden no puede tener lotes de Norte y de Lajitas: hacé una orden por zona"); return false; }
     OT.campania = $("ot-campania").value;
     OT.cultivo = $("ot-cultivo").value;
-    OT.responsable = $("ot-responsable").value;
+    OT.responsable = leerAplicador();
     OT.labor = $("ot-labor").value;
+    OT.variedad = /siembra/i.test(OT.labor) ? $("ot-variedad").value.trim() : "";
     OT.fecha = $("ot-fecha").value;
     OT.obs = $("ot-obs").value;
     // Quién aporta se carga en el encabezado o al confirmar; acá sólo se limpia
@@ -3012,81 +3179,225 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   /**
-   * Remito de salida: Aplicación retira el producto del galpón y queda en
-   * tránsito. Recién acá baja el stock del depósito — guardar la orden no
-   * mueve nada. Primero salen los envases abiertos de la zona; el resto, en
-   * envases enteros.
+   * Registro de salida (antes «remito de salida»). El producto de una orden
+   * puede salir en varias tandas y de varios depósitos: cada tanda es un
+   * registro con el número del remito en papel (si lo hay) y su foto. Lo que
+   * sale baja del depósito y queda en el tránsito de la zona hasta que se
+   * confirma la aplicación. Un producto queda tildado (retirado) solo, cuando
+   * lo que salió cubre lo que necesita la orden.
    */
+  const necesidadDe = (o, it) => {
+    const p = prodById(it.prod);
+    return p ? aBase(num(it.dosis), it.unidad, p) * o.lotes.reduce((a, l) => a + num(l.ha), 0) : 0;
+  };
+  /** Productos de la orden que todavía no salieron completos: [{it, p, falta}]. */
+  function faltaRetirar(o) {
+    return (o.items || []).filter((it) => it.prod && num(it.dosis) > 0).map((it) => {
+      const p = prodById(it.prod);
+      return { it, p, falta: Math.max(0, necesidadDe(o, it) - num(it.retirado)) };
+    }).filter((x) => x.p && x.falta > 0.0001 && !x.it.salidaCompleta);
+  }
+
+  /**
+   * Por dónde conviene sacar una cantidad: primero los envases abiertos del
+   * Rincón de la zona, después envases enteros del depósito que la tenga.
+   */
+  function sugerirSalida(it, p, cant, zona) {
+    const lineas = [], tomado = {};
+    let resto = cant;
+    depositosConAbiertos(zona).forEach((d) => {
+      if (resto <= 0.0001) return;
+      const h = Math.max(0, saldo(p.id, d.id, "abierto"));
+      if (h <= 0.0001) return;
+      const c = Math.min(h, resto);
+      lineas.push({ dep: d.id, sub: "abierto", cant: redondear(c) });
+      tomado[d.id] = c;
+      resto -= c;
+    });
+    if (resto > 0.0001) {
+      const f = fuenteDe(it, resto, zona, tomado);
+      const d = f.dep || depById(depositoDeRetorno(zona, "")) || S.depositos[0];
+      if (d) lineas.push({ dep: d.id, sub: "cerrado", cant: redondear(retiroCerrado(p, resto).cerrado) });
+    }
+    return lineas;
+  }
+
   function remitoOT() {
     if (otHaTotal() <= 0) return toast("Seleccioná al menos un lote");
-    if ((OT.estado || "borrador") !== "borrador") return toast("Esta orden ya tiene remito");
-    if (!puedeEnZona("remitir", zonaDeOT())) return toast("El producto lo retira Aplicación de la zona");
-    const filas = analizarOT().filter((a) => a.p && a.nec > 0.0001);
-    if (!filas.length) return toast("Cargá al menos un producto con dosis");
-    // Que falte stock no frena la orden: se retira lo planificado y el saldo
-    // queda en negativo (se ve en rojo), para corregirlo después con la compra.
-    // Un producto de la otra zona sin decidir se toma como «comprar».
+    const estado = OT.estado || "borrador";
+    if (estado !== "borrador" && estado !== "transito") return toast("La orden ya está aplicada");
+    if (!puedeEnZona("remitir", zonaDeOT())) return toast("La salida la registra " + ZONA_TXT(zonaDeOT()));
     const zona = zonaDeOT();
-    const depDe = (a) => a.f.dep || depById(depositoDeRetorno(zona, "")) || S.depositos[0] || null;
-    const cerr = filas.map((a) => (a.r.cerrado > 0.0001 && depDe(a) ? redondear(a.r.cerrado) : 0));
-    const numero = siguienteNumero("RS-", S.ordenes.map((o) => o.remito && o.remito.numero), S.remitoSeq);
+    const pend = faltaRetirar(OT);
+    if (!pend.length) return toast(estado === "borrador" ? "Cargá al menos un producto con dosis" : "Ya salió todo lo de la orden");
+    const numero = siguienteNumero("RS-", S.ordenes.reduce((a, o) =>
+      a.concat(o.remito ? [o.remito.numero] : [], (o.salidas || []).map((x) => x.numero)), []), S.remitoSeq);
+    // Una o más líneas por producto: depósito (o su Rincón) y cantidad
+    const lineas = pend.map((x) => sugerirSalida(x.it, x.p, x.falta, zona).map((l) => Object.assign(l, { sale: true })));
 
-    abrirModal("Remito de salida " + numero,
-      "Para " + OT.numero + ". Lo que sale del galpón queda en tránsito hasta que se confirme la aplicación.",
-      `<div class="tbl-scroll"><table>
-        <thead><tr><th>Producto</th><th class="num">Necesita</th><th>Del Rincón</th><th>Cerrados de</th>
-          <th class="num" style="width:120px">Cerrados</th><th class="num">Vuelve (est.)</th></tr></thead>
+    abrirModal("Registro de salida " + numero,
+      "Para " + OT.numero + (estado === "transito" ? " · lo que todavía falta retirar" : "") +
+      ". Lo que sale baja del depósito y queda en tránsito " + (ZONAS[zona] || "") + " hasta que se confirme la aplicación.",
+      `<div class="grid g3" style="margin-bottom:14px">
+        <div class="field"><label class="fl">N° de remito <span class="fu">el del papel, si hay</span></label>
+          <input type="text" id="rs-remito" placeholder="Ej. 0001-00012345" /></div>
+        <div class="field"><label class="fl">Foto del remito</label>
+          <input type="file" id="rs-foto" accept="image/*" capture="environment" />
+          <div class="fu" id="rs-foto-nota">Se guarda en la carpeta «Remitos» del Drive</div></div>
+        <div class="field"><label class="fl">Fecha</label><input type="date" id="rs-fecha" value="${hoy()}" /></div>
+      </div>
+      <div class="tbl-scroll"><table id="rs-tbl">
+        <thead><tr><th style="width:34px">Sale</th><th>Producto</th><th class="num">Falta</th><th>De qué depósito</th>
+          <th class="num" style="width:120px">Cantidad</th><th>Queda</th></tr></thead>
         <tbody id="rs-body"></tbody>
       </table></div>
-      <div class="hint" style="margin-top:10px">Primero se usan los envases abiertos del Rincón de la zona. Si no alcanza el stock, se retira igual y el saldo queda en negativo hasta que se cargue la compra.</div>
+      <div class="hint" style="margin-top:10px">Lo propuesto usa primero los envases abiertos del Rincón y después envases enteros. Si un producto sale de dos depósitos, «＋ Otro depósito». Lo que no salga ahora queda para un próximo registro.</div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="rs-ok">Registrar remito</button>
+        <button class="btn btn-primary" id="rs-ok">Registrar salida</button>
         <button class="btn btn-ghost" id="rs-cancelar">Cancelar</button>
       </div>`);
 
+    // Opciones de depósito: los de la zona primero; los Rincones (envases abiertos) aparte
+    const opciones = (sel, pid) => {
+      const z = zona ? depositosDeZona(zona).filter(sirveA(OT)) : S.depositos.filter(sirveA(OT));
+      const otras = S.depositos.filter(sirveA(OT)).filter((d) => z.indexOf(d) === -1);
+      const op = (d, sub) => {
+        const v = d.id + "|" + sub, h = saldo(pid, d.id, sub);
+        return `<option value="${v}" ${v === sel ? "selected" : ""}>${esc(d.nombre)}${sub === "abierto" ? " · Rincón" : ""} (${fmt(h, 1)})</option>`;
+      };
+      const rincones = z.filter((d) => d.tipo === "propio" && saldo(pid, d.id, "abierto") > 0.0001);
+      return z.map((d) => op(d, "cerrado")).join("") + rincones.map((d) => op(d, "abierto")).join("") +
+        (otras.length ? `<optgroup label="Otra zona">${otras.map((d) => op(d, "cerrado")).join("")}</optgroup>` : "");
+    };
+
     function pintar() {
-      $("rs-body").innerHTML = filas.map((a, i) => {
-        const total = a.r.deAbierto + cerr[i];
-        const vuelve = total - a.nec;
-        return `<tr class="${a.f.estado === "comprar" ? "fila-comprar" : ""}">
-          <td><strong>${esc(a.p.marca)}</strong>${a.f.estado === "comprar" ? `<div class="comprar">${textoComprar(a.p, Math.max(0, a.nec - total))}</div>` : ""}</td>
-          <td class="num" style="color:#64748b">${fmt(a.nec, 2)} ${unidadLabel(a.p, a.nec)}</td>
-          <td style="font-size:12px">${a.r.abiertos.length ? a.r.abiertos.map((x) => fmt(x.cant, 2) + " " + a.p.unidad + " · " + esc(x.dep.nombre)).join("<br>") : '<span style="color:#cbd5e1">—</span>'}</td>
-          <td>${a.r.cerrado > 0.0001 && depDe(a) ? esc(depDe(a).nombre) + (a.f.estado === "traer" ? ' <span class="badge b-amber">otra zona</span>' : "") : "—"}
-            ${cerr[i] > 0 && depDe(a) && cerr[i] - saldo(a.p.id, depDe(a).id, "cerrado") > 0.0001
-              ? `<div style="font-size:11px;color:#be123c;font-weight:700">sin stock suficiente: queda en ${fmt(saldo(a.p.id, depDe(a).id, "cerrado") - cerr[i], 1)}</div>` : ""}</td>
-          <td class="num">${a.r.cerrado > 0.0001 && depDe(a) ? `<input type="number" min="0" step="${envaseDe(a.p) || 0.01}" value="${cerr[i]}" data-rs="${i}" style="text-align:right" />` : "—"}</td>
-          <td class="num" style="color:${vuelve > 0.0001 ? "#15803d" : "#cbd5e1"};font-weight:700">${vuelve > 0.0001 ? fmt(vuelve, 2) + " " + a.p.unidad : "—"}</td>
-        </tr>`;
+      $("rs-body").innerHTML = pend.map((x, i) => {
+        const sale = lineas[i].filter((l) => l.sale).reduce((a, l) => a + num(l.cant), 0);
+        const queda = x.falta - sale;
+        const filas = lineas[i].map((l, j) => {
+          const disp = saldo(x.p.id, l.dep, l.sub);
+          return `<tr class="${j ? "rs-extra" : ""}">
+            <td><input type="checkbox" data-rs-sale="${i}|${j}" ${l.sale ? "checked" : ""} style="width:auto;transform:scale(1.25)" /></td>
+            <td>${j ? '<span style="color:#94a3b8">↳ mismo producto</span>' : `<strong>${esc(x.p.marca)}</strong>`}</td>
+            <td class="num" style="color:#64748b">${j ? "" : fmt(x.falta, 2) + " " + unidadLabel(x.p, x.falta)}</td>
+            <td><select data-rs-dep="${i}|${j}" style="font-size:12px;padding:4px 6px;max-width:220px">${opciones(l.dep + "|" + l.sub, x.p.id)}</select>
+              ${l.sale && num(l.cant) - disp > 0.0001 ? `<div style="font-size:11px;color:#be123c;font-weight:700">sin stock suficiente: queda en ${fmt(disp - num(l.cant), 1)}</div>` : ""}
+              ${j === lineas[i].length - 1 ? `<div><button class="link-add" data-rs-mas="${i}">＋ Otro depósito</button></div>` : ""}</td>
+            <td class="num"><input type="number" min="0" step="${envaseDe(x.p) || 0.01}" value="${l.cant}" data-rs-cant="${i}|${j}" style="text-align:right" /></td>
+            <td style="font-size:12px;white-space:nowrap">${j ? "" : queda <= 0.0001
+              ? '<span class="badge b-green">✓ completo</span>' + (queda < -0.0001 ? `<div style="color:#15803d">vuelve ~${fmt(-queda, 2)}</div>` : "")
+              : `<span style="color:#b45309;font-weight:700">falta ${fmt(queda, 2)}</span>`}</td>
+          </tr>`;
+        });
+        return filas.join("");
       }).join("");
-      $("rs-body").querySelectorAll("[data-rs]").forEach((inp) => inp.addEventListener("change", () => {
-        cerr[+inp.dataset.rs] = Math.max(0, num(inp.value)); pintar();
+      const par = (v) => v.split("|").map(Number);
+      $("rs-body").querySelectorAll("[data-rs-sale]").forEach((c) => c.addEventListener("change", () => {
+        const [i, j] = par(c.dataset.rsSale); lineas[i][j].sale = c.checked; pintar();
+      }));
+      $("rs-body").querySelectorAll("[data-rs-cant]").forEach((inp) => inp.addEventListener("change", () => {
+        const [i, j] = par(inp.dataset.rsCant);
+        lineas[i][j].cant = Math.max(0, num(inp.value));
+        lineas[i][j].sale = lineas[i][j].cant > 0;
+        pintar();
+      }));
+      $("rs-body").querySelectorAll("[data-rs-dep]").forEach((sel) => sel.addEventListener("change", () => {
+        const [i, j] = par(sel.dataset.rsDep), [dep, sub] = sel.value.split("|");
+        Object.assign(lineas[i][j], { dep, sub });
+        pintar();
+      }));
+      $("rs-body").querySelectorAll("[data-rs-mas]").forEach((b) => b.addEventListener("click", () => {
+        const i = +b.dataset.rsMas, x = pend[i];
+        const sale = lineas[i].filter((l) => l.sale).reduce((a, l) => a + num(l.cant), 0);
+        const ya = new Set(lineas[i].map((l) => l.dep + "|" + l.sub));
+        const d = S.depositos.filter(sirveA(OT)).find((y) => !ya.has(y.id + "|cerrado")) || S.depositos[0];
+        lineas[i].push({ dep: d.id, sub: "cerrado", cant: redondear(Math.max(0, x.falta - sale)), sale: x.falta - sale > 0.0001 });
+        pintar();
       }));
     }
 
     $("rs-cancelar").addEventListener("click", cerrarModal);
     $("rs-ok").addEventListener("click", () => {
-      if (!filas.some((a, i) => a.r.deAbierto > 0.0001 || cerr[i] > 0)) return toast("No hay nada para retirar");
-
-      const fecha = hoy();
+      const salen = lineas.map((ls) => ls.filter((l) => l.sale && num(l.cant) > 0.0001));
+      if (!salen.some((ls) => ls.length)) return toast("No hay nada para retirar: tildá al menos un producto");
+      const fecha = $("rs-fecha").value || hoy();
       const quien = (usuarioActual() || {}).id || "";
-      filas.forEach((a, i) => {
-        const base = { fecha, prod: a.p.id, precio: 0, ref: numero, otId: OT.id, nota: OT.numero + " · " + OT.labor, usuario: quien };
-        const partes = a.r.abiertos.map((x) => ({ dep: x.dep.id, sub: "abierto", cant: x.cant }));
-        if (cerr[i] > 0) partes.push({ dep: depDe(a).id, sub: "cerrado", cant: cerr[i] });
-        a.it.retiros = partes;
-        a.it.retirado = redondear(partes.reduce((s, x) => s + x.cant, 0));
-        a.it.origenRemito = cerr[i] > 0 ? depDe(a).id : (partes[0] ? partes[0].dep : "");
-        if (partes.length) alTransito(partes, base);
+      const papel = $("rs-remito").value.trim();
+      const sid = uid();
+      const archivo = $("rs-foto").files && $("rs-foto").files[0];
+      pend.forEach((x, i) => {
+        if (!salen[i].length) return;
+        const base = { fecha, prod: x.p.id, precio: 0, ref: papel || numero, otId: OT.id, nota: OT.numero + " · " + OT.labor + " · " + numero, usuario: quien };
+        const partes = salen[i].map((l) => ({ dep: l.dep, sub: l.sub, cant: redondear(num(l.cant)), salida: sid }));
+        alTransito(partes, base);
+        x.it.retiros = (x.it.retiros || []).concat(partes);
+        x.it.retirado = redondear(x.it.retiros.reduce((s, r) => s + num(r.cant), 0));
+        const cerr = partes.find((r) => r.sub === "cerrado");
+        if (!x.it.origenRemito) x.it.origenRemito = (cerr || partes[0]).dep;
       });
-      OT.remito = { numero, fecha, usuario: quien };
+      OT.salidas = (OT.salidas || []).concat([{ id: sid, numero, remito: papel, fecha, usuario: quien, foto: archivo ? "pendiente" : "" }]);
+      if (!OT.remito) OT.remito = { numero, fecha, usuario: quien };
       S.remitoSeq = parseInt(numero.slice(3), 10) + 1;
+      const faltan = faltaRetirar(OT).length;
       guardarOT("transito");
       cerrarModal();
       renderAll();
-      toast("Remito " + numero + " registrado — el producto está en tránsito");
+      if (archivo) guardarFotoRemito(OT.id, sid, archivo, [OT.numero, papel ? "remito " + papel : numero].join(" · "));
+      toast("Salida " + numero + " registrada" + (faltan ? " · faltan " + faltan + " producto(s) por retirar" : " · ya salió todo lo de la orden"));
     });
     pintar();
+  }
+
+  // ── Fotos de los remitos ───────────────────────────────────────────────
+  // Se achican (1600 px, JPEG) para que entren en el equipo sin señal, y se
+  // suben a la carpeta «Remitos» del Drive apenas hay conexión. Mientras
+  // tanto quedan en FOTOS_PEND y la salida dice «foto por subir».
+  const FOTOS_PEND = "iag_fotos_pendientes";
+  function leerFotosPend() { try { return JSON.parse(localStorage.getItem(FOTOS_PEND) || "{}"); } catch (e) { return {}; } }
+  function achicarFoto(archivo) {
+    return new Promise((ok, mal) => {
+      const img = new Image(), url = URL.createObjectURL(archivo);
+      img.onload = () => {
+        const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        const ctx = c.getContext("2d");
+        if (!ctx) return mal(new Error("sin canvas"));
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        ok(c.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => mal(new Error("no se pudo leer la foto"));
+      img.src = url;
+    });
+  }
+  function guardarFotoRemito(otId, salidaId, archivo, nombre) {
+    achicarFoto(archivo).then((data) => {
+      const pend = leerFotosPend();
+      pend[salidaId] = { otId, nombre: nombre + ".jpg", data };
+      try { localStorage.setItem(FOTOS_PEND, JSON.stringify(pend)); } catch (e) { return toast("La foto no entra en la memoria del equipo: sacala de nuevo con señal"); }
+      subirFotosPendientes();
+    }).catch(() => toast("No se pudo leer la foto del remito"));
+  }
+  let subiendoFotos = false;
+  function subirFotosPendientes() {
+    const nube = window.IAgNube;
+    if (subiendoFotos || !nube || !nube.config() || !navigator.onLine || !nube.subirFoto) return;
+    const pend = leerFotosPend();
+    const ids = Object.keys(pend);
+    if (!ids.length) return;
+    subiendoFotos = true;
+    ids.reduce((cadena, sid) => cadena.then(() => nube.subirFoto(pend[sid].nombre, pend[sid].data).then((r) => {
+      if (!r || !r.ok) throw new Error((r && r.error) || "no se pudo subir");
+      const o = S.ordenes.find((x) => x.id === pend[sid].otId);
+      const s = o && (o.salidas || []).find((x) => x.id === sid);
+      if (s) { s.foto = r.url; if (OT && OT.id === o.id) OT = JSON.parse(JSON.stringify(o)); save(); }
+      const resto = leerFotosPend(); delete resto[sid];
+      try { localStorage.setItem(FOTOS_PEND, JSON.stringify(resto)); } catch (e) { /* se reintenta */ }
+    })), Promise.resolve())
+      .then(() => { renderAll(); toast("Foto del remito guardada en el Drive"); })
+      .catch(() => { /* sin señal o la planilla todavía no acepta fotos: se reintenta después */ })
+      .then(() => { subiendoFotos = false; });
   }
 
   /** Redondeo suave para no mostrar 7.9749999999 en un input */
@@ -3102,7 +3413,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       mov({ deposito: x.dep, sub: x.sub, cant: -x.cant });
       total += x.cant;
     });
-    mov({ deposito: TRANSITO, sub: "cerrado", cant: total });
+    mov({ deposito: transitoDeOT(OT), sub: "cerrado", cant: total });
   }
 
   /**
@@ -3116,7 +3427,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const enteros = env > 0 ? Math.floor(cant / env + 1e-9) * env : cant;
     const resto = cant - enteros;
     const mov = (extra) => S.movimientos.push(Object.assign({}, base, { id: uid(), tipo: "retorno", link }, extra));
-    mov({ deposito: TRANSITO, sub: "cerrado", cant: -cant });
+    mov({ deposito: transitoDeOT(OT), sub: "cerrado", cant: -cant });
     if (enteros > 0.0001) mov({ deposito: depId, sub: "cerrado", cant: enteros });
     if (resto > 0.0001) mov({ deposito: depId, sub: "abierto", cant: resto });
   }
@@ -3128,34 +3439,30 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    * remanente sigue en tránsito hasta que Aplicación confirme que volvió.
    */
   /**
-   * modo "reportar": el equipo cuenta lo que aplicó (superficie, dosis real,
-   * remanente) y queda «Aplicación reportada», sin mover stock. Si no, es la
-   * confirmación del encargado: arranca con lo reportado (si lo hay) y da de
-   * baja lo usado.
+   * Las órdenes «Aplicación reportada» (las reportaba el equipo hasta el 2/11)
+   * arrancan con lo reportado.
    */
-  function confirmarOT(modo) {
-    const reportar = modo === "reportar";
-    if ((OT.estado || "borrador") === "borrador") return toast("Primero el remito de salida");
+  function confirmarOT() {
+    if ((OT.estado || "borrador") === "borrador") return toast("Primero el registro de salida");
     if (OT.estado === "aplicada") return toast("Esta orden ya fue aplicada");
-    if (reportar && OT.estado !== "transito") return toast("Esta aplicación ya está reportada");
-    if (!puedeEnZona(reportar ? "reportar" : "confirmarOT", zonaDeOT())) return toast(reportar ? "La reporta el equipo de la zona" : "La confirma el encargado de la zona");
+    if (!puedeEnZona("confirmarOT", zonaDeOT())) return toast("La confirma el encargado de la zona");
     const haPlan = otHaTotal();
-    const rep = !reportar && OT.estado === "reportada" ? OT.reporte : null;
+    const rep = OT.estado === "reportada" ? OT.reporte : null;
 
     const filas = OT.items.filter((it) => it.prod && num(it.retirado) > 0).map((it) => ({
       it, p: prodById(it.prod), ret: num(it.retirado),
     }));
-    if (!filas.length) return toast("El remito no sacó ningún producto");
+    if (!filas.length) return toast("Todavía no salió ningún producto");
 
     let haReal = rep && rep.haReal != null ? num(rep.haReal) : haPlan;
     const usoEst = (f) => Math.min(f.ret, aBase(num(f.it.dosis), f.it.unidad, f.p) * haReal);
     const rem = filas.map((f, i) => rep && rep.rem && rep.rem[i] != null ? num(rep.rem[i]) : redondear(f.ret - usoEst(f)));
     const tocado = filas.map(() => !!rep);
 
-    abrirModal((reportar ? "Reportar aplicación · " : "Confirmar aplicación · ") + OT.numero,
-      reportar ? "Contá lo que se aplicó. Lo confirma después " + ZONA_TXT(zonaDeOT()) + "."
-        : rep ? "Reportado por " + nombreUsuario(rep.por) + ". Revisá y confirmá; podés corregir."
-        : "Lo que salió con el remito " + (OT.remito ? OT.remito.numero : "") + " es lo usado más lo que sobró. Confirmá o corregí el remanente.",
+    abrirModal("Confirmar aplicación · " + OT.numero,
+      (faltaRetirar(OT).length ? "Ojo: todavía falta retirar " + faltaRetirar(OT).map((x) => x.p.marca).join(", ") + ". Se confirma con lo que salió. " : "") +
+      (rep ? "Reportado por " + nombreUsuario(rep.por) + ". Revisá y confirmá; podés corregir."
+        : "Lo que salió del galpón es lo usado más lo que sobró. Confirmá o corregí el remanente."),
       `<div class="grid g2" style="margin-bottom:16px">
         <div class="field">
           <label class="fl">Superficie realmente aplicada <span class="fu">ha</span></label>
@@ -3182,7 +3489,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       </div>
       <div class="hint" style="margin-top:10px">El remanente queda en tránsito hasta que se confirme que volvió al galpón.</div>
       <div class="btn-row">
-        <button class="btn btn-green" id="ci-confirmar">${reportar ? "Reportar la aplicación" : "Confirmar y dar de baja lo usado"}</button>
+        <button class="btn btn-green" id="ci-confirmar">Confirmar y dar de baja lo usado</button>
         <button class="btn btn-ghost" id="ci-cancelar">Cancelar</button>
       </div>`);
 
@@ -3236,20 +3543,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         OT.aporta = $("ci-aporta").value;
       }
       const fecha = $("ci-fecha").value || OT.fecha;
-      if (reportar) {
-        OT.reporte = { haReal, fecha, rem: rem.slice(), por: (usuarioActual() || {}).id || "", cuando: new Date().toISOString() };
-        filas.forEach((f, i) => { f.it.usado = f.ret - rem[i]; f.it.remanente = rem[i]; f.it.dosisReal = haReal > 0 ? (f.ret - rem[i]) / haReal : 0; });
-        OT.haReal = haReal;
-        OT.fechaAplicacion = fecha;
-        guardarOT("reportada");
-        cerrarModal();
-        renderAll();
-        return toast("Aplicación reportada — falta que la confirme " + ZONA_TXT(zonaDeOT()));
-      }
       filas.forEach((f, i) => {
         const usado = f.ret - rem[i];
         if (usado > 0.0001) S.movimientos.push({
-          id: uid(), fecha, tipo: "uso", prod: f.p.id, deposito: TRANSITO, sub: "cerrado", cant: usado, precio: 0,
+          id: uid(), fecha, tipo: "uso", prod: f.p.id, deposito: transitoDeOT(OT), sub: "cerrado", cant: usado, precio: 0,
           ref: OT.numero, otId: OT.id, nota: OT.labor + (OT.cultivo ? " · " + OT.cultivo : "") + (OT.aporta ? " · aporta " + OT.aporta : ""),
           usuario: (usuarioActual() || {}).id || "", ...(OT.aporta ? { aporta: OT.aporta } : {}),
         });
@@ -3336,7 +3633,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         if (volvio[i] > 0.0001) volverDelTransito(f.p, destino[i], volvio[i], base);
         const falta = f.esp - volvio[i];
         if (falta > 0.0001) S.movimientos.push(Object.assign({}, base, {
-          id: uid(), tipo: "uso", deposito: TRANSITO, sub: "cerrado", cant: falta, nota: "Remanente que no volvió · " + OT.numero,
+          id: uid(), tipo: "uso", deposito: transitoDeOT(OT), sub: "cerrado", cant: falta, nota: "Remanente que no volvió · " + OT.numero,
         }));
         f.it.volvio = volvio[i];
         f.it.usado = num(f.it.usado) + Math.max(0, falta);
@@ -3473,11 +3770,42 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       const c = aXY(l.centro);
       if (c[0] > x0 + 5 && c[0] < x0 + w - 5 && c[1] > y0 + 3 && c[1] < y0 + h - 3) doc.text(l.nombre, c[0], c[1] + 1, { align: "center" });
     });
-    // Los de la orden
+    // Los de la orden. Los que van parciales: sin relleno, borde cortado y
+    // rayado, para que nadie lea «el lote entero» en el dibujo
+    const esParcial = (l) => { const o = OT.lotes.find((x) => x.loteId === l.id); return o && num(o.ha) < num(l.ha) - 0.05; };
     doc.setFillColor(254, 215, 170); doc.setDrawColor(234, 88, 12); doc.setLineWidth(0.5);
-    deOT.forEach((l) => poligono(l, "FD"));
+    deOT.filter((l) => !esParcial(l)).forEach((l) => poligono(l, "FD"));
+    deOT.filter(esParcial).forEach((l) => {
+      const xy = l.anillos[0].map(aXY);
+      const xs = xy.map((p) => p[0]), ys = xy.map((p) => p[1]);
+      const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);
+      let rayado = false;
+      try {
+        doc.saveGraphicsState();
+        const segs = xy.slice(1).map((p, i) => [p[0] - xy[i][0], p[1] - xy[i][1]]);
+        doc.lines(segs, xy[0][0], xy[0][1], [1, 1], null, true); doc.clip(); doc.discardPath();
+        rayado = true;
+      } catch (e) { /* sin recorte: sólo el borde */ }
+      if (rayado) {
+        doc.setDrawColor(251, 146, 60); doc.setLineWidth(0.35);
+        for (let k = x1 - (y2 - y1); k < x2; k += 2.2) doc.line(k, y2, k + (y2 - y1), y1);
+        doc.restoreGraphicsState();
+      }
+      doc.setDrawColor(234, 88, 12); doc.setLineWidth(0.6);
+      if (doc.setLineDashPattern) doc.setLineDashPattern([1.5, 1], 0);
+      poligono(l, "S");
+      if (doc.setLineDashPattern) doc.setLineDashPattern([], 0);
+    });
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(124, 45, 18);
-    deOT.forEach((l) => { const c = aXY(l.centro || l.anillos[0][0]); doc.text(l.nombre, c[0], c[1] + 1.2, { align: "center" }); });
+    deOT.forEach((l) => {
+      const c = aXY(l.centro || l.anillos[0][0]);
+      const o = OT.lotes.find((x) => x.loteId === l.id);
+      doc.text(l.nombre, c[0], c[1] + 1.2, { align: "center" });
+      if (esParcial(l)) {
+        doc.setFontSize(7); doc.text("parcial · " + fmt(num(o.ha), 0) + " de " + fmt(l.ha, 0) + " ha", c[0], c[1] + 4.6, { align: "center" });
+        doc.setFontSize(9);
+      }
+    });
     // Norte y escala de 1 km
     doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(71, 85, 105);
     doc.text("N", x0 + w - 4, y0 + 5, { align: "center" });
@@ -3531,8 +3859,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }
     const datos = [
       ["Fecha", OT.fecha || "—"], ["Labor", OT.labor || "—"], ["Cultivo", OT.cultivo || "—"],
+    ].concat(/siembra/i.test(OT.labor || "") && OT.variedad ? [["Variedad", OT.variedad]] : []).concat([
       ["Zona", zona ? ZONAS[zona] || zona : "—"], ["Aplicador", OT.responsable || "—"],
-    ].concat(esSociedad(OT) ? [["Aporta", OT.aporta || "a definir"]] : []);
+    ]).concat(esSociedad(OT) ? [["Aporta", OT.aporta || "a definir"]] : []);
     doc.setFontSize(11.5);
     datos.forEach(([k, v]) => {
       doc.setFont("helvetica", "normal"); gris(); doc.text(k, M, y);
@@ -3703,7 +4032,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // «Con movimientos» se mide dentro de la selección: si filtrás un depósito,
     // no tiene sentido listar productos que nunca pasaron por ahí.
     const conMov = new Set(S.movimientos
-      .filter((m) => idsVis.indexOf(m.deposito) !== -1 || m.deposito === TRANSITO)
+      .filter((m) => idsVis.indexOf(m.deposito) !== -1 || esTransito(m.deposito))
       .map((m) => m.prod));
 
     const filas = S.catalogo.filter((p) => {
@@ -3722,14 +4051,14 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       <th>Tipo</th>
       ${colsDep.map((d) => `<th class="num">${esc(d.nombre)}</th>`).join("")}
       <th class="num">${esc(tituloTotal)}</th>
-      <th class="num" title="Salió del galpón con un remito; se da de baja al confirmar la aplicación">En tránsito</th>
+      ${TRANSITOS().map((t) => `<th class="num" title="Salió del galpón hacia ${esc(depById(t).zona ? ZONAS[depById(t).zona] : "")}; se da de baja al confirmar la aplicación">${esc(depById(t).nombre)}</th>`).join("")}
       <th class="num" style="width:92px">Mínimo</th>
       <th class="num">USD/u</th>
       <th class="num">Valorizado</th>
     </tr>`;
 
     if (!filas.length) {
-      $("stock-body").innerHTML = `<tr><td colspan="${colsDep.length + 7}" class="empty">Sin productos que coincidan.</td></tr>`;
+      $("stock-body").innerHTML = `<tr><td colspan="${colsDep.length + 6 + TRANSITOS().length}" class="empty">Sin productos que coincidan.</td></tr>`;
       $("stock-foot").innerHTML = "";
       renderStockKPIs(); renderTransito(); renderAbiertos(); renderVerificar(); renderConfirmar();
       return;
@@ -3740,7 +4069,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       const porDep = colsDep.map((d) => saldo(p.id, d.id));
       const total = saldoVis(p.id);
       const abiertoVis = idsVis.reduce((a, id) => a + saldo(p.id, id, "abierto"), 0);
-      const transito = saldo(p.id, TRANSITO);
+      // Lo viejo sin zona (TRANSITO) se suma al primero, para que no se pierda de vista
+      const transitos = TRANSITOS().map((t, i) => saldo(p.id, t) + (i === 0 ? saldo(p.id, TRANSITO) : 0));
       const svVis = idsVis.reduce((a, id) => a + sinVerificar(p.id, id), 0);
       const precio = ultimoPrecio(p.id);
       const valor = total * precio;
@@ -3761,7 +4091,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         <td class="num"><strong style="${neg ? "color:#be123c" : ""}">${fmt(total, 2)}</strong> <span style="font-size:11px;color:#94a3b8">${unidadLabel(p, total)}</span>
           ${abiertoVis > 0.0001 ? `<div style="font-size:10px;color:#b45309;font-weight:600">${fmt(abiertoVis, 2)} en Rincón</div>` : ""}${
             svVis > 0.0001 ? `<div style="font-size:10px;color:#be123c;font-weight:600">${fmt(svVis, 2)} sin verificar</div>` : ""}</td>
-        <td class="num" style="${transito > 0.0001 ? "color:#1d4ed8;font-weight:700" : "color:#cbd5e1"}">${transito > 0.0001 ? fmt(transito, 2) : "—"}</td>
+        ${transitos.map((t) => `<td class="num" style="${t > 0.0001 ? "color:#1d4ed8;font-weight:700" : "color:#cbd5e1"}">${t > 0.0001 ? fmt(t, 2) : "—"}</td>`).join("")}
         <td class="num"><input type="number" min="0" step="0.1" value="${p.min || 0}" data-min="${p.id}" style="text-align:right" /></td>
         <td class="num" style="color:#64748b">${precio ? fmt(precio, 2) : "—"}</td>
         <td class="num">${valor ? "$" + fmt(valor, 0) : "—"}</td>
@@ -3769,7 +4099,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }).join("");
 
     $("stock-foot").innerHTML = `<tr>
-      <td colspan="${colsDep.length + 6}" style="text-align:right;font-weight:800;color:#475569;padding-top:11px">
+      <td colspan="${colsDep.length + 5 + TRANSITOS().length}" style="text-align:right;font-weight:800;color:#475569;padding-top:11px">
         Valorización ${parcial ? "de la selección" : "total"} (últ. precio de compra)
       </td>
       <td class="num" style="font-weight:800;font-size:15px;padding-top:11px">$${fmt(valorTotal, 0)}</td>
@@ -3794,9 +4124,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (!cont) return;
     const filas = new Map();   // otId|prod → fila
     S.movimientos.forEach((m) => {
-      if (m.deposito !== TRANSITO) return;
-      const k = (m.otId || "") + "|" + m.prod;
-      if (!filas.has(k)) filas.set(k, { otId: m.otId, prod: m.prod, cant: 0, desde: "" });
+      if (!esTransito(m.deposito)) return;
+      const k = m.deposito + "|" + (m.otId || "") + "|" + m.prod;
+      if (!filas.has(k)) filas.set(k, { otId: m.otId, prod: m.prod, cant: 0, desde: "", zona: zonaDeTransito(m.deposito) });
       const f = filas.get(k);
       f.cant += CON_SIGNO_PROPIO[m.tipo] ? m.cant : signo(m.tipo) * m.cant;
       if (m.tipo === "remito" && (!f.desde || m.fecha < f.desde)) f.desde = m.fecha;
@@ -3810,7 +4140,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const porZona = {};
     vivas.forEach((f) => {
       const o = S.ordenes.find((x) => x.id === f.otId);
-      const z = o ? zonaDeOrden(o) : "";
+      const z = f.zona || (o ? zonaDeOrden(o) : "");
       const it = o ? o.items.find((i) => i.prod === f.prod && i.origenRemito) : null;
       Object.assign(f, { orden: o, origen: it ? depById(it.origenRemito) : null });
       (porZona[z] = porZona[z] || []).push(f);
@@ -3826,7 +4156,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       lista.forEach((f) => { totales[f.prod] = (totales[f.prod] || 0) + f.cant; });
       return `<div class="transito-zona" data-zona="${esc(z)}">
         <div class="transito-cab">
-          <strong>${esc(ZONAS[z] || "Sin zona")}</strong>
+          <strong>${esc(z ? "En tránsito " + ZONAS[z] : "En tránsito · sin zona")}</strong>
           <span>${Object.keys(totales).length} producto(s) · ${ots.size} orden(es)</span>
         </div>
         <div class="transito-totales">${Object.keys(totales).map((pid) => {
@@ -3919,7 +4249,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       m.confirmadoPor = (usuarioActual() || {}).id || "";
       save(); renderAll();
       const p = prodById(m.prod);
-      const socio = /lartirigoyen/i.test((depById(m.deposito) || {}).nombre || "") || m.proveedor;
+      const socio = esAportes(depById(m.deposito)) || /lartirigoyen/i.test((depById(m.deposito) || {}).nombre || "") || m.proveedor;
       toast((socio ? "Aporte confirmado: " : "Facturado: ") + fmt(m.cant, 2) + " de " + (p ? p.marca : "") + " — ya cuenta en el stock");
     }));
   }
@@ -3952,7 +4282,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const negs  = conMov.filter((p) => saldoVis(p.id) < -0.0001);
     const valor = conMov.reduce((a, p) => a + saldoVis(p.id) * ultimoPrecio(p.id), 0);
     const usos  = S.ordenes.filter((o) => o.estado === "aplicada").length;
-    const enTransito = S.catalogo.filter((p) => saldo(p.id, TRANSITO) > 0.0001).length;
+    const enTransito = S.catalogo.filter((p) => TRANSITOS().concat(TRANSITO).some((t) => saldo(p.id, t) > 0.0001)).length;
 
     $("stock-kpis").innerHTML = `
       <div class="kpi"><div class="val">${conMov.length}</div><div class="lbl">Productos ${parcial ? "en la selección" : "en stock"}</div></div>
@@ -4430,7 +4760,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     });
     const md = $("mov-filtro-dep"), actual = md.value;
     md.innerHTML = '<option value="">Todos</option>' + S.depositos.map((d) => `<option value="${d.id}">${esc(d.nombre)}</option>`).join("") +
-      `<option value="${TRANSITO}">En tránsito</option>`;
+      TRANSITOS().map((t) => `<option value="${t}">${esc(depById(t).nombre)}</option>`).join("");
     md.value = actual;
 
     if (REGISTRO.length) {
@@ -4537,12 +4867,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // OT · encabezado
     $("ot-mojado").addEventListener("input", (e) => { OT.mojado = num(e.target.value); renderOTTotales(); });
     $("ot-tanque").addEventListener("input", (e) => { OT.tanque = num(e.target.value); renderOTTotales(); });
-    ["ot-fecha", "ot-campania", "ot-cultivo", "ot-responsable", "ot-labor", "ot-obs", "ot-aporta"].forEach((id) => {
+    $("ot-aplicador").addEventListener("change", () => {
+      $("ot-responsable").style.display = $("ot-aplicador").value === "__otro" ? "" : "none";
+      if ($("ot-aplicador").value === "__otro") $("ot-responsable").focus();
+      OT.responsable = leerAplicador();
+    });
+    $("ot-responsable").addEventListener("input", () => { OT.responsable = leerAplicador(); });
+    ["ot-fecha", "ot-campania", "ot-cultivo", "ot-labor", "ot-obs", "ot-aporta"].forEach((id) => {
       $(id).addEventListener("change", (e) => {
         OT[{ "ot-fecha": "fecha", "ot-campania": "campania", "ot-cultivo": "cultivo",
-             "ot-responsable": "responsable", "ot-labor": "labor", "ot-obs": "obs", "ot-aporta": "aporta" }[id]] = e.target.value;
+             "ot-labor": "labor", "ot-obs": "obs", "ot-aporta": "aporta" }[id]] = e.target.value;
         // La labor decide si se muestran caldo y tanques
-        if (id === "ot-labor") renderOTTotales();
+        if (id === "ot-labor") { renderOTTotales(); renderOTHeader(); }
         if (id === "ot-cultivo") OT.cultivoAMano = true;   // elegido a mano: la planificación ya no lo cambia
       });
     });
@@ -4568,13 +4904,21 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-save").addEventListener("click", () => { if (guardarOT() === false) return; renderAll(); toast("Borrador guardado — " + OT.numero); });
     $("ot-remito").addEventListener("click", remitoOT);
     $("ot-confirm").addEventListener("click", () => confirmarOT());
-    $("ot-reportar").addEventListener("click", () => confirmarOT("reportar"));
     $("ot-retorno").addEventListener("click", confirmarRetorno);
     $("ot-print").addEventListener("click", () => imprimirOT());
     $("ot-compartir").addEventListener("click", () => imprimirOT("compartir"));
     $("ot-pedido").addEventListener("click", generarPedido);
     $("mv-tipo").addEventListener("change", aplicarPermisos);
     $("ot-clear").addEventListener("click", () => { nuevaOT(); renderOT(); toast("Orden nueva"); });
+    $("ot-siembra").addEventListener("click", () => {
+      nuevaOT();
+      OT.labor = "Siembra";
+      PICKER = "elegir";
+      renderOT();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast("Orden de siembra: elegí los lotes y agregá la semilla con su densidad");
+    });
+    $("ot-variedad").addEventListener("input", () => { OT.variedad = $("ot-variedad").value; OT.variedadAMano = true; });
 
     // Stock
     ["stock-buscar", "stock-filtro-tipo", "stock-solo-con"].forEach((id) => $(id).addEventListener("input", renderStock));
@@ -4642,7 +4986,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=27");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=28");
   load();
   vincularConRegistro();
   nuevaOT();
@@ -4676,6 +5020,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   delete S.recetaPendiente;   // versión anterior del puente
   bind();
   renderAll();
+  // Fotos de remitos sacadas sin señal: se suben al volver la conexión
+  subirFotosPendientes();
+  window.addEventListener("online", subirFotosPendientes);
   // Llegaron cambios de otros desde el Drive: se recarga el estado (la orden
   // que se está escribiendo no se pierde: vive aparte, en OT)
   if (window.IAgNube) window.IAgNube.alCambiar(KEY, () => { load(); renderAll(); });
