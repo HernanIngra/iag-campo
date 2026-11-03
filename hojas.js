@@ -197,7 +197,7 @@
   function lotesTxt(S, o) { return (o.lotes || []).map(function (x) { return loteTxt(S, x); }).join(", "); }
   /** «EM10 (68 ha), EM11» → lotes de la orden (por nombre; sin ha, la del lote). */
   function lotesDeTxt(S, txt) {
-    return String(txt || "").split(/[,;]/).map(function (p) { return p.trim(); }).filter(Boolean).map(function (p) {
+    return String(txt || "").split(/[,;](?![^(]*\))/).map(function (p) { return p.trim(); }).filter(Boolean).map(function (p) {
       var m = p.match(/^(.*?)\s*(?:\(([\d.,]+)\s*ha\)?)?$/i);
       var nombre = (m ? m[1] : p).trim();
       var l = (S.lotes || []).find(function (y) { return slug(y.nombre) === slug(nombre); });
