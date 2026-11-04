@@ -5,11 +5,13 @@ window.CAMPOS_TARPUY = {"Tarpuy-LI": {"nombre": "La Iluminada", "zona": "NORTE"}
 // Si el historial no se cargó, se arma su parte pública con esto
 window.APLIC_META = window.APLIC_META || { campos: window.CAMPOS_TARPUY };
 
-// Lotes sin dibujo en el mapa (23/10): las banquinas de La Iluminada y de El
-// Mistol. Sin superficie fija: la orden pide las hectáreas a mano.
+// Lotes sin dibujo en el mapa (23/10): las banquinas. La superficie es la de
+// «Superficie por lote TPA.xlsx» (4/11); El Mistol no figura ahí: la orden
+// pide las hectáreas a mano.
 window.LOTES_SIN_MAPA = [
-  { id: "LIBANQ", nombre: "LIBANQ", campo: "Tarpuy-LI", ha: 0, anillos: [], sinMapa: true, detalle: "Banquinas de La Iluminada" },
+  { id: "LIBANQ", nombre: "LIBANQ", campo: "Tarpuy-LI", ha: 40, anillos: [], sinMapa: true, detalle: "Banquinas de La Iluminada" },
   { id: "EMBANQ", nombre: "EMBANQ", campo: "Tarpuy-EM", ha: 0, anillos: [], sinMapa: true, detalle: "Banquinas de El Mistol" },
+  { id: "BEBANQ", nombre: "BEBANQ", campo: "Tarpuy-BE", ha: 12, anillos: [], sinMapa: true, detalle: "Banquinas de Buenaesperanza" },
 ];
 if (Array.isArray(window.LOTES)) {
   window.LOTES_SIN_MAPA.forEach(function (l) {

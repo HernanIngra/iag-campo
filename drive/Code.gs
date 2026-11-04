@@ -19,6 +19,11 @@
  * se sacan en el registro de salida. Para crearla, la primera vez Google pide
  * permiso para usar el Drive (versión 5).
  *
+ * Stock real (versión 6, 4/11): TPA pega el stock en la planilla «Stock
+ * Tarpuy» (STOCK_EXTERNO). La app la lee con la acción «stockExterno» para
+ * ver el stock al armar una orden. La primera vez Google pide permiso para
+ * abrir otras planillas.
+ *
  * Cada fila lleva en «rev» el momento de su último cambio (milisegundos). Una
  * edición a mano también lo actualiza (onEdit), y así la app se entera.
  */
@@ -39,6 +44,8 @@ const TABLAS = {
   "Campos": ["Campo", "Código", "Zona", "En sociedad", "id", "rev"],
 };
 const PARTE = 45000;
+// Planilla donde TPA pega el stock real (la que lee la app al armar una OT)
+const STOCK_EXTERNO = "1LPXAPLwLNASEVgiwVLPtB8S0XwT293KghSm-lCexh8g";
 
 // ── Hojas ────────────────────────────────────────────────────────────────
 function libro_() { return SpreadsheetApp.getActiveSpreadsheet(); }
@@ -149,7 +156,16 @@ function doGet(e) {
   if (p.accion === "probar") {
     Object.keys(TABLAS).forEach(tabla_);
     stock_();
-    return respuesta_({ ok: true, planilla: libro_().getName(), version: 5 });
+    return respuesta_({ ok: true, planilla: libro_().getName(), version: 6 });
+  }
+
+  // El stock que pega TPA: la primera hoja, tal cual (la app la interpreta)
+  if (p.accion === "stockExterno") {
+    const libro = SpreadsheetApp.openById(STOCK_EXTERNO);
+    const h = libro.getSheets()[0];
+    const valores = h.getRange(1, 1, Math.max(1, h.getLastRow()), Math.min(40, Math.max(1, h.getLastColumn()))).getValues();
+    return respuesta_({ ok: true, nombre: libro.getName(), hoja: h.getName(),
+                        actualizado: DriveApp.getFileById(STOCK_EXTERNO).getLastUpdated().toISOString(), valores: valores });
   }
 
   if (p.accion === "archivo") {

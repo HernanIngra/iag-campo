@@ -404,6 +404,8 @@
     /** Foto (dataURL JPEG) a la carpeta «Remitos» del Drive: {ok, url}. */
     subirFoto: function (nombre, dataUrl) { return enviar({ accion: "foto", nombre: nombre, contenido: String(dataUrl).replace(/^data:[^,]*,/, "") }); },
     bajarArchivos: function () { return bajarArchivos(ARCHIVOS); },
+    /** La planilla «Stock Tarpuy» tal cual: {ok, nombre, actualizado, valores}. Necesita el Apps Script versión 6. */
+    stockExterno: function () { return pedir({ accion: "stockExterno" }); },
     ARCHIVOS: ARCHIVOS,
     sincronizar: sincronizar,
     pendientes: function () { return pendientes().n; },

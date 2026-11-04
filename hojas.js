@@ -236,7 +236,8 @@
     for (var j = 0; j < i; j++) if (o.items[j].prod === it.prod) n++;
     return o.id + "|" + it.prod + (n ? "|" + n : "");
   }
-  var ITEM_DATOS = ["origen", "decision", "retiros", "origenRemito", "remanente", "salidaCompleta"];
+  // fraccion y cambioDe: producto cambiado al retirar (4/11)
+  var ITEM_DATOS = ["origen", "decision", "retiros", "origenRemito", "remanente", "salidaCompleta", "fraccion", "cambioDe"];
   function filasItems(S, o) {
     var out = {};
     var ha = (o.lotes || []).reduce(function (a, x) { return a + num(x.ha); }, 0);
@@ -247,7 +248,7 @@
       var porHa = /^(l|kg)\/ha$/i.test(it.unidad || "") ? num(it.dosis) : /^(cc|g)\/ha$/i.test(it.unidad || "") ? num(it.dosis) / 1000 : 0;
       out[idItem(o, it, i)] = {
         "OT": o.numero, "Producto": nombreProd(S, it.prod), "Dosis": r3(it.dosis), "Unidad dosis": it.unidad || "",
-        "Necesidad": porHa ? r3(porHa * ha) : "", "Retirado": it.retirado ? r3(it.retirado) : "",
+        "Necesidad": porHa ? r3(porHa * ha * (it.fraccion == null ? 1 : num(it.fraccion))) : "", "Retirado": it.retirado ? r3(it.retirado) : "",
         "Usado": it.usado ? r3(it.usado) : "", "Dosis real": it.dosisReal ? r3(it.dosisReal) : "",
         "Devuelto": it.volvio !== undefined ? r3(it.volvio) : "", "Sale de": nombreDep(S, it.origenRemito || it.origen || ""),
         "Anulado": "", "datos": JSON.stringify(resto),
