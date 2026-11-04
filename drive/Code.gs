@@ -164,8 +164,10 @@ function doGet(e) {
     const libro = SpreadsheetApp.openById(STOCK_EXTERNO);
     const h = libro.getSheets()[0];
     const valores = h.getRange(1, 1, Math.max(1, h.getLastRow()), Math.min(40, Math.max(1, h.getLastColumn()))).getValues();
-    return respuesta_({ ok: true, nombre: libro.getName(), hoja: h.getName(),
-                        actualizado: DriveApp.getFileById(STOCK_EXTERNO).getLastUpdated().toISOString(), valores: valores });
+    // La fecha de modificación necesita permiso de Drive: si no está, va sin fecha
+    let actualizado = "";
+    try { actualizado = DriveApp.getFileById(STOCK_EXTERNO).getLastUpdated().toISOString(); } catch (err) { /* sin permiso de Drive */ }
+    return respuesta_({ ok: true, nombre: libro.getName(), hoja: h.getName(), actualizado: actualizado, valores: valores });
   }
 
   if (p.accion === "archivo") {
