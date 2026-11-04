@@ -281,7 +281,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=30" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=31" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -971,20 +971,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=30"></script>
-<script src="campania.js?v=30"></script>
-<script src="stock-externo.js?v=30"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=30"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=30"></script>
-<script src="lotes-tarpuy.js?v=30" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=30" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=30"></script>
-<script src="senasa-catalogo.js?v=30" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=30" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=31"></script>
+<script src="campania.js?v=31"></script>
+<script src="stock-externo.js?v=31"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=31"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=31"></script>
+<script src="lotes-tarpuy.js?v=31" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=31" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=31"></script>
+<script src="senasa-catalogo.js?v=31" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=31" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=30" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=30"></script>
-<script src="nube.js?v=30"></script>
+<script src="semillas-catalogo.js?v=31" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=31"></script>
+<script src="nube.js?v=31"></script>
 
 <script>
 (function () {
@@ -1246,6 +1246,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // El depósito «Lartirigoyen» se partió en Larti-Aportes y Larti-TPA: lo que
     // había era el pedido de aportes del 15/10, así que va a Aportes
     remapDeposito(idDeposito("Lartirigoyen"), idDeposito("Larti-Aportes"));
+    // Un solo Rincón en Lajitas (4/11): «Rincón Larti», en Larti-TPA. Los
+    // envases abiertos que hubieran quedado en Larti-Aportes pasan ahí.
+    (S.movimientos || []).forEach((m) => {
+      if (m.sub === "abierto" && m.deposito === idDeposito("Larti-Aportes")) m.deposito = idDeposito("Larti-TPA");
+    });
     // Tipos mal cargados en la planilla de stock del Norte (revisados contra
     // SENASA y el historial, 2/11). Una sola vez: después manda la planilla.
     if (!S.tipos0211) {
@@ -2178,6 +2183,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   /** Los aportes del socio son de la sociedad: sólo abastecen a campos en sociedad. */
   const esAportes = (d) => !!d && /aporte/i.test(d.nombre || "");
   const sirveA = (o) => (d) => !esAportes(d) || (o && esSociedad(o));
+  /**
+   * El Rincón (envases abiertos) es uno por zona: «Rincón Larti» en Lajitas
+   * (vive en Larti-TPA, aunque el envase haya salido de Larti-Aportes) y el
+   * de El Mistol en el Norte (4/11).
+   */
+  const esLarti = (d) => !!d && /^larti/i.test(d.nombre || "");
+  const rinconDe = (depId) => {
+    const d = depById(depId);
+    if (!esLarti(d)) return depId;
+    const tpa = S.depositos.find((x) => esLarti(x) && !esAportes(x));
+    return tpa ? tpa.id : depId;
+  };
+  const nombreRincon = (d) => esLarti(d) ? "Rincón Larti" : "Rincón " + (d ? d.nombre : "");
+  const tieneRincon = (d) => !!d && d.tipo === "propio" && !esAportes(d);
 
   /**
    * Depósitos de la zona donde se buscan envases abiertos: el propio primero.
@@ -2654,7 +2673,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
   /** Texto corto de cuánto se retira: «3 × 20 L» o «7 L abierto + 2 × 20 L». */
   function textoRetiro(p, r) {
-    const partes = (r.abiertos || []).map((x) => fmt(x.cant, 2) + " " + p.unidad + " del Rincón de " + x.dep.nombre);
+    const partes = (r.abiertos || []).map((x) => fmt(x.cant, 2) + " " + p.unidad + " del " + nombreRincon(x.dep));
     if (r.envases > 0) partes.push(r.envases + " × " + fmt(r.envase, 0) + " " + p.unidad);
     return partes.join(" + ");
   }
@@ -3475,9 +3494,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       const otras = S.depositos.filter(sirveA(OT)).filter((d) => z.indexOf(d) === -1);
       const op = (d, sub) => {
         const v = d.id + "|" + sub, h = saldoOT(pid, d.id, sub);
-        return `<option value="${v}" ${v === sel ? "selected" : ""}>${esc(d.nombre)}${sub === "abierto" ? " · Rincón" : ""} (${fmt(h, 1)})</option>`;
+        return `<option value="${v}" ${v === sel ? "selected" : ""}>${esc(sub === "abierto" ? nombreRincon(d) : d.nombre)} (${fmt(h, 1)})</option>`;
       };
-      const rincones = z.filter((d) => d.tipo === "propio" && saldoOT(pid, d.id, "abierto") > 0.0001);
+      const rincones = z.filter((d) => tieneRincon(d) && saldoOT(pid, d.id, "abierto") > 0.0001);
       return z.map((d) => op(d, "cerrado")).join("") + rincones.map((d) => op(d, "abierto")).join("") +
         (otras.length ? `<optgroup label="Otra zona">${otras.map((d) => op(d, "cerrado")).join("")}</optgroup>` : "");
     };
@@ -3673,7 +3692,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const mov = (extra) => S.movimientos.push(Object.assign({}, base, { id: uid(), tipo: "retorno", link }, extra));
     mov({ deposito: transitoDeOT(OT), sub: "cerrado", cant: -cant });
     if (enteros > 0.0001) mov({ deposito: depId, sub: "cerrado", cant: enteros });
-    if (resto > 0.0001) mov({ deposito: depId, sub: "abierto", cant: resto });
+    if (resto > 0.0001) mov({ deposito: rinconDe(depId), sub: "abierto", cant: resto });
   }
 
   /**
@@ -3864,7 +3883,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
             ${falta > 0.0001 ? `<div style="font-size:10.5px;color:#be123c">${fmt(falta, 2)} no volvió: se da como usado</div>` : ""}</td>
           <td style="font-size:12px">${env > 0
             ? (enteros ? enteros + " cerrado(s) de " + fmt(env, 0) + " " + f.p.unidad : "") + (enteros && resto > 0.0001 ? " + " : "") +
-              (resto > 0.0001 ? '<span style="color:#b45309;font-weight:700">1 abierto con ' + fmt(resto, 2) + " " + f.p.unidad + " → Rincón</span>" : "")
+              (resto > 0.0001 ? '<span style="color:#b45309;font-weight:700">1 abierto con ' + fmt(resto, 2) + " " + f.p.unidad + " → " + esc(nombreRincon(depById(rinconDe(destino[i])))) + "</span>" : "")
             : "sin control de envase"}</td>
           <td><select data-dest="${i}" style="font-size:12px;padding:4px 6px">${opcionesDep(destino[i])}</select></td>
         </tr>`;
@@ -4344,7 +4363,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const retiros = [];
     OT.items.forEach((it) => (it.retiros || []).forEach((r) => {
       const p = prodById(it.prod), d = depById(r.dep), sa = (OT.salidas || []).find((x) => x.id === r.salida);
-      retiros.push([sa ? sa.numero + " · " + sa.fecha : "—", p ? p.marca : "?", (d ? d.nombre : r.dep) + (r.sub === "abierto" ? " (Rincón)" : ""),
+      retiros.push([sa ? sa.numero + " · " + sa.fecha : "—", p ? p.marca : "?", r.sub === "abierto" && d ? nombreRincon(d) : (d ? d.nombre : r.dep),
                     fmt(num(r.cant), 2) + " " + (p ? p.unidad : ""), r.remito || (sa && sa.remito) || "—"]);
     }));
     if (retiros.length) {
@@ -4661,7 +4680,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       d, prods: S.catalogo.map((p) => ({ p, c: saldo(p.id, d.id, "abierto") })).filter((x) => x.c > 0.0001),
     })).filter((x) => x.prods.length);
     cont.innerHTML = deps.length ? deps.map(({ d, prods }) => `<div class="transito-zona">
-        <div class="transito-cab"><strong>${esc(d.nombre)}</strong><span>${esc(ZONAS[d.zona] || "")} · ${prods.length} producto(s)</span></div>
+        <div class="transito-cab"><strong>${esc(nombreRincon(d))}</strong><span>${esc(ZONAS[d.zona] || "")} · ${prods.length} producto(s)</span></div>
         <div class="transito-totales" style="margin-bottom:0">${prods.map((x) =>
           `<span class="badge b-amber">${esc(x.p.marca)} · ${fmt(x.c, 2)} ${unidadLabel(x.p, x.c)}</span>`).join(" ")}</div>
       </div>`).join("")
@@ -4771,11 +4790,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("mv-simple").style.display = esCompra ? "none" : "";
     const esTransf = t === "transferencia";
     $("mv-dep2-wrap").style.display = esTransf ? "" : "none";
-    $("mv-dep-label").textContent = esTransf ? "Depósito origen" : t === "rincon" ? "Rincón de" : "Depósito";
-    // El Rincón sólo existe en los depósitos propios
-    const deps = t === "rincon" ? S.depositos.filter((d) => d.tipo === "propio") : S.depositos;
+    $("mv-dep-label").textContent = esTransf ? "Depósito origen" : t === "rincon" ? "Rincón" : "Depósito";
+    // Un Rincón por zona: Rincón Larti (Lajitas) y el de El Mistol
+    const deps = t === "rincon" ? S.depositos.filter(tieneRincon) : S.depositos;
     const previo = $("mv-dep").value;
-    fillSelect($("mv-dep"), deps.map((d) => [d.id, d.nombre]), deps.some((d) => d.id === previo) ? previo : undefined);
+    fillSelect($("mv-dep"), deps.map((d) => [d.id, t === "rincon" ? nombreRincon(d) : d.nombre]), deps.some((d) => d.id === previo) ? previo : undefined);
     if (esCompra) renderReparto();
   }
 
@@ -4861,8 +4880,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       S.movimientos.push(Object.assign({}, base, { id: uid(), tipo: "transferencia", deposito: dep2, cant:  cant, link }));
       toast("Transferencia registrada");
     } else if (tipo === "rincon") {
-      S.movimientos.push(Object.assign({}, base, { id: uid(), tipo, deposito: dep, sub: "abierto", cant }));
-      toast("Reingresado al Rincón de " + depById(dep).nombre);
+      S.movimientos.push(Object.assign({}, base, { id: uid(), tipo, deposito: rinconDe(dep), sub: "abierto", cant }));
+      toast("Reingresado al " + nombreRincon(depById(rinconDe(dep))));
     } else {
       S.movimientos.push(Object.assign({}, base, { id: uid(), tipo, deposito: dep, cant }));
       toast(MOV_LABEL[tipo] + " registrada");
@@ -5386,7 +5405,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=30");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=31");
   load();
   vincularConRegistro();
   nuevaOT();
