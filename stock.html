@@ -281,7 +281,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=32" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=33" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -346,7 +346,7 @@
             <option value="">—</option>
             <option>Soja</option><option>Maíz</option><option>Trigo</option>
             <option>Poroto</option><option>Sorgo</option><option>Garbanzo</option>
-            <option>Girasol</option><option>Barbecho</option>
+            <option>Mungo</option><option>Girasol</option><option>Barbecho</option>
           </select>
           <div class="fu" id="ot-cultivo-plan"></div>
         </div>
@@ -971,20 +971,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=32"></script>
-<script src="campania.js?v=32"></script>
-<script src="stock-externo.js?v=32"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=32"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=32"></script>
-<script src="lotes-tarpuy.js?v=32" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=32" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=32"></script>
-<script src="senasa-catalogo.js?v=32" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=32" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=33"></script>
+<script src="campania.js?v=33"></script>
+<script src="stock-externo.js?v=33"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=33"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=33"></script>
+<script src="lotes-tarpuy.js?v=33" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=33" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=33"></script>
+<script src="senasa-catalogo.js?v=33" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=33" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=32" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=32"></script>
-<script src="nube.js?v=32"></script>
+<script src="semillas-catalogo.js?v=33" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=33"></script>
+<script src="nube.js?v=33"></script>
 
 <script>
 (function () {
@@ -1572,7 +1572,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const esNuevo = !p.id;
     const tipos = ["Semilla", "Herbicida", "Fungicida", "Insecticida", "Curasemilla",
                    "Inoculante", "Fertilizante", "Coadyuvante", "Acaricida", "Otro"];
-    const especies = ["Maíz", "Soja", "Trigo", "Sorgo", "Poroto", "Girasol", "Garbanzo",
+    const especies = ["Maíz", "Soja", "Trigo", "Sorgo", "Poroto", "Girasol", "Garbanzo", "Mungo",
                       "Alfalfa", "Cebada", "Avena", "Maní", "Otro"];
 
     abrirModal(esNuevo ? "Cargar producto a mano" : "Editar " + p.marca,
@@ -2512,8 +2512,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (/girasol/.test(t)) return "Girasol";
     if (/sorgo/.test(t)) return "Sorgo";
     if (/garbanzo/.test(t)) return "Garbanzo";
+    if (/mungo/.test(t)) return "Mungo";
     const op = Array.from($("ot-cultivo").options).map((o) => o.value);
-    if (op.indexOf(c) === -1) {   // mungo, chía…: se suma a la lista
+    if (op.indexOf(c) === -1) {   // chía, cártamo…: se suma a la lista
       const o = document.createElement("option"); o.textContent = c; $("ot-cultivo").appendChild(o);
     }
     return c;
@@ -2935,7 +2936,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-num").value = OT.numero;
     $("ot-fecha").value = OT.fecha;
     $("ot-campania").value = OT.campania;
-    if (OT.cultivo) cultivoDeOT(OT.cultivo);   // que exista la opción (mungo, chía…)
+    if (OT.cultivo) cultivoDeOT(OT.cultivo);   // que exista la opción (chía, cártamo…)
     $("ot-cultivo").value = OT.cultivo;
     const cults = cultivosDeLotes(OT);
     $("ot-cultivo-plan").textContent = cults.length && (cults.length > 1 || cults[0].cultivo)
@@ -5405,7 +5406,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=32");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=33");
   load();
   vincularConRegistro();
   nuevaOT();
