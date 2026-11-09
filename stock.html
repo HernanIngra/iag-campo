@@ -103,6 +103,8 @@
   .btn-green { background: #15803d; color: #fff; }
   .btn-ghost { background: #fff; color: #475569; border-color: #cbd5e1; }
   .btn-danger { background: #fff; color: #b91c1c; border-color: #fecaca; }
+  .btn-borrar { background: #dc2626; color: #fff; }
+  .link.borrar-todo { color: #fff; background: #dc2626; border-radius: 6px; padding: 3px 8px; }
   .btn-sm { padding: 5px 11px; font-size: 12px; }
   .btn-row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 16px; }
 
@@ -281,7 +283,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=33" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=34" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -375,6 +377,7 @@
           <select id="ot-labor">
             <option>Pulverización terrestre</option>
             <option>Pulverización aérea</option>
+            <option>Pulverización con drone</option>
             <option>Siembra</option>
             <option>Fertilización</option>
             <option>Curado de semilla</option>
@@ -501,6 +504,7 @@
         <button class="btn btn-green" id="ot-compartir">📲 Compartir (WhatsApp)</button>
         <button class="btn btn-ghost" id="ot-clear">Limpiar</button>
         <button class="btn btn-ghost" id="ot-siembra">🌱 Nueva orden de siembra</button>
+        <button class="btn btn-borrar" id="ot-borrar-todo" style="display:none">⛔ Borrar aplicación</button>
       </div>
     </div>
 
@@ -971,20 +975,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=33"></script>
-<script src="campania.js?v=33"></script>
-<script src="stock-externo.js?v=33"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=33"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=33"></script>
-<script src="lotes-tarpuy.js?v=33" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=33" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=33"></script>
-<script src="senasa-catalogo.js?v=33" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=33" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=34"></script>
+<script src="campania.js?v=34"></script>
+<script src="stock-externo.js?v=34"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=34"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=34"></script>
+<script src="lotes-tarpuy.js?v=34" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=34" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=34"></script>
+<script src="senasa-catalogo.js?v=34" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=34" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=33" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=33"></script>
-<script src="nube.js?v=33"></script>
+<script src="semillas-catalogo.js?v=34" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=34"></script>
+<script src="nube.js?v=34"></script>
 
 <script>
 (function () {
@@ -3051,6 +3055,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     poner("ot-retorno", conRetorno && puedeEnZona("confirmarRetorno", zona),
           conRetorno ? "El retorno lo confirma " + ZONA_TXT(zona) : "No hay remanente esperando volver");
     if ($("ot-retorno")) $("ot-retorno").style.display = conRetorno ? "" : "none";
+    // Etapa de prueba: borrado absoluto, en cualquier estado, con clave
+    if ($("ot-borrar-todo")) $("ot-borrar-todo").style.display = S.ordenes.some((o) => o.id === OT.id) ? "" : "none";
     // El registro final: después de devolver el remanente (o si no sobró nada)
     if ($("ot-registro")) {
       $("ot-registro").style.display = estado === "aplicada" ? "" : "none";
@@ -3152,6 +3158,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         <td><span class="badge ${e.badge}">${e.txt}</span></td>
         <td style="white-space:nowrap">
           <button class="link" data-ot-edit="${o.id}">Abrir</button>${accion}
+          <button class="link borrar-todo" data-ot-borrar-todo="${o.id}" style="margin-left:8px">⛔ Borrar</button>
         </td>
       </tr>`;
     }).join("");
@@ -3162,6 +3169,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       save(); renderAll(); toast("Orden borrada");
     }));
     body.querySelectorAll("[data-ot-anular]").forEach((b) => b.addEventListener("click", () => anularOT(b.dataset.otAnular)));
+    body.querySelectorAll("[data-ot-borrar-todo]").forEach((b) => b.addEventListener("click", () => borrarAbsoluto(b.dataset.otBorrarTodo)));
   }
 
   /** ¿Algún lote de la orden está en un campo en sociedad con Lartirigoyen? */
@@ -3242,7 +3250,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
                 <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">${esc(o.numero)} · ${esc(o.fecha || "")}${o.prueba ? '<span class="badge b-amber" style="margin-left:6px">PRUEBA</span>' : ""}</div></td>
               <td>${esc(o.cultivo || "—")}</td>
               <td>${prods.join("") || '<span style="color:#94a3b8">Sin productos</span>'}
-                ${puede("borrarOT") && o.estado !== "aplicada" ? `<div style="margin-top:6px"><button class="link del" data-pend-borrar="${o.id}">🗑 Borrar orden</button></div>` : ""}</td>
+                <div style="margin-top:6px">${puede("borrarOT") && o.estado !== "aplicada" ? `<button class="link del" data-pend-borrar="${o.id}" style="margin-right:10px">🗑 Borrar orden</button>` : ""}<button class="link borrar-todo" data-pend-borrar-todo="${o.id}">⛔ Borrar aplicación</button></div></td>
             </tr>`;
           }).join("")}</tbody>
         </table></div></div>`;
@@ -3250,6 +3258,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     cont.innerHTML = html || '<div class="empty">No hay órdenes pendientes' + (mias !== S.ordenes ? " en tu zona" : "") + ".</div>";
     cont.querySelectorAll("[data-pend-abrir]").forEach((b) => b.addEventListener("click", () => abrirOrden(b.dataset.pendAbrir)));
     cont.querySelectorAll("[data-pend-borrar]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); borrarOrden(b.dataset.pendBorrar); }));
+    cont.querySelectorAll("[data-pend-borrar-todo]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); borrarAbsoluto(b.dataset.pendBorrarTodo); }));
   }
 
   function irATab(nombre) {
@@ -3309,6 +3318,47 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     S.ordenes = S.ordenes.filter((x) => x.id !== id);
     if (OT && OT.id === id) nuevaOT();
     save(); renderAll(); toast("Orden " + o.numero + " borrada");
+  }
+
+  /**
+   * Etapa de prueba: borra la orden en cualquier estado (también aplicada y con
+   * retorno) y todos sus movimientos, como si nunca hubiera existido. Pide clave.
+   */
+  const CLAVE_BORRADO = "1234";
+  function borrarAbsoluto(id) {
+    const o = S.ordenes.find((x) => x.id === id);
+    if (!o) return;
+    const e = estadoDe(o);
+    abrirModal("⛔ Borrar la aplicación " + o.numero, "Estado actual: " + e.txt,
+      `<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 12px;color:#991b1b;font-size:13px;line-height:1.5">
+        Esto borra <strong>absolutamente</strong> la aplicación ${esc(o.numero)}, <strong>sin importar el estado en el que está</strong>:
+        la orden, la salida, la aplicación y el retorno. Todo el producto que movió vuelve al stock como si nunca hubiera existido.
+        <strong>No se puede deshacer.</strong>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label class="fl">Clave</label>
+        <input type="password" id="borrar-clave" inputmode="numeric" autocomplete="off" />
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-ghost" id="borrar-cancelar">Cancelar</button>
+        <button class="btn btn-borrar" id="borrar-ok">⛔ Borrar definitivamente</button>
+      </div>`);
+    const ok = () => {
+      if ($("borrar-clave").value !== CLAVE_BORRADO) { $("borrar-clave").value = ""; $("borrar-clave").focus(); return toast("Clave incorrecta"); }
+      S.movimientos = S.movimientos.filter((m) => m.otId !== id);
+      S.ordenes = S.ordenes.filter((x) => x.id !== id);
+      try {
+        const pend = leerFotosPend();
+        Object.keys(pend).forEach((k) => { if (pend[k].otId === id) delete pend[k]; });
+        localStorage.setItem(FOTOS_PEND, JSON.stringify(pend));
+      } catch (err) { /* sin fotos pendientes */ }
+      if (OT && OT.id === id) nuevaOT();
+      cerrarModal(); save(); renderAll(); toast("Aplicación " + o.numero + " borrada");
+    };
+    $("borrar-ok").addEventListener("click", ok);
+    $("borrar-clave").addEventListener("keydown", (ev) => { if (ev.key === "Enter") ok(); });
+    $("borrar-cancelar").addEventListener("click", cerrarModal);
+    setTimeout(() => $("borrar-clave").focus(), 50);
   }
 
   function anularOT(id) {
@@ -5330,6 +5380,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-pedido").addEventListener("click", generarPedido);
     $("mv-tipo").addEventListener("change", aplicarPermisos);
     $("ot-clear").addEventListener("click", () => { nuevaOT(); renderOT(); toast("Orden nueva"); });
+    $("ot-borrar-todo").addEventListener("click", () => borrarAbsoluto(OT.id));
     $("ot-siembra").addEventListener("click", () => {
       nuevaOT();
       OT.labor = "Siembra";
@@ -5406,7 +5457,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=33");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=34");
   load();
   vincularConRegistro();
   nuevaOT();
