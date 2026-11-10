@@ -154,7 +154,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=35" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=36" title="Volver al inicio">⌂ Inicio</a>
   <h1>Recorrer</h1>
   <span class="info" id="info-campos"></span>
   <span class="sp"></span>
@@ -163,7 +163,7 @@
   <button class="hbtn" id="btn-relleno">▢ Sólo contorno</button>
   <button class="hbtn" id="btn-color">🎨 Por campo</button>
   <span id="barra-usuario" style="display:flex;align-items:center;gap:9px"></span>
-  <a class="hbtn" href="stock.html?v=35" style="text-decoration:none">Stock →</a>
+  <a class="hbtn" href="stock.html?v=36" style="text-decoration:none">Stock →</a>
 </header>
 
 <div id="mapa"></div>
@@ -203,14 +203,14 @@
   </div>
 </div>
 
-<script src="vendor/leaflet/leaflet.js?v=35"></script>
-<script src="usuario.js?v=35"></script>
-<script src="campania.js?v=35"></script>
-<script src="lotes-tarpuy.js?v=35" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=35" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=35"></script>
-<script src="hojas.js?v=35"></script>
-<script src="nube.js?v=35"></script>
+<script src="vendor/leaflet/leaflet.js?v=36"></script>
+<script src="usuario.js?v=36"></script>
+<script src="campania.js?v=36"></script>
+<script src="lotes-tarpuy.js?v=36" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=36" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=36"></script>
+<script src="hojas.js?v=36"></script>
+<script src="nube.js?v=36"></script>
 <script>
 (function () {
   "use strict";
@@ -804,7 +804,7 @@
                      origen: "recorrer", fecha: new Date().toISOString().slice(0, 10) };
     try { localStorage.setItem("iag_receta_pendiente", JSON.stringify(receta)); }
     catch (e) { return aviso("No se pudo guardar la selección"); }
-    window.location.href = "stock.html?v=35";
+    window.location.href = "stock.html?v=36";
   }
 
   // ── Ubicación ───────────────────────────────────────────────────────────
@@ -846,7 +846,7 @@
   });
 
   // ── Arranque ────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=35");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=36");
 
   // Recetar es tarea del gerente y los encargados: lo decide motivoNoRecetar()
   $("info-campos").textContent = LOTES.length
