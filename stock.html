@@ -283,7 +283,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=36" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=37" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -559,10 +559,17 @@
           <label class="fl">Buscar</label>
           <input type="text" id="stock-buscar" placeholder="Producto o principio activo" />
         </div>
+        <div class="field" id="stock-fuente-campo" style="display:none">
+          <label class="fl">Stock de</label>
+          <select id="stock-fuente">
+            <option value="planilla">La planilla «Stock Tarpuy»</option>
+            <option value="app">La cuenta de la app</option>
+          </select>
+        </div>
         <div class="field" style="flex:1;min-width:180px">
           <label class="fl">
             <label style="font-weight:400;font-size:12px;color:#64748b;cursor:pointer">
-              <input type="checkbox" id="stock-solo-con" style="width:auto;vertical-align:-2px" checked /> Sólo productos con movimientos
+              <input type="checkbox" id="stock-solo-con" style="width:auto;vertical-align:-2px" checked /> <span id="stock-solo-con-txt">Sólo productos con movimientos</span>
             </label>
           </label>
         </div>
@@ -975,20 +982,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=36"></script>
-<script src="campania.js?v=36"></script>
-<script src="stock-externo.js?v=36"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=36"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=36"></script>
-<script src="lotes-tarpuy.js?v=36" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=36" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=36"></script>
-<script src="senasa-catalogo.js?v=36" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=36" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=37"></script>
+<script src="campania.js?v=37"></script>
+<script src="stock-externo.js?v=37"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=37"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=37"></script>
+<script src="lotes-tarpuy.js?v=37" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=37" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=37"></script>
+<script src="senasa-catalogo.js?v=37" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=37" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=36" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=36"></script>
-<script src="nube.js?v=36"></script>
+<script src="semillas-catalogo.js?v=37" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=37"></script>
+<script src="nube.js?v=37"></script>
 
 <script>
 (function () {
@@ -1398,9 +1405,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const res = [];
 
     if (opts && opts.stock) {
-      const mios = S.catalogo.filter((p) => !tokens.length || coincide(indexar(p), tokens))
+      const mios = S.catalogo.filter((p) => !tokens.length || coincide(indexar(p) + " " + sinAcentos(filaPlanilla(p)), tokens))
         .map((p) => ({ origen: "mio", p, hay: stockEnZona(p) }));
-      const enCat = new Set(S.catalogo.map((p) => slug(p.marca)));
+      const enCat = new Set(S.catalogo.map((p) => slug(filaPlanilla(p) || p.marca)));
       const dePlanilla = !EXT ? [] : EXT.productos
         .filter((x) => !enCat.has(slug(x.nombre)) && (!tokens.length || coincide(sinAcentos(x.nombre + " " + x.tipo), tokens)))
         .map((x) => ({ origen: "mio", planilla: true, p: { marca: x.nombre, pa: "", tipo: x.tipo, unidad: x.unidad }, hay: stockEnZona(x.nombre) }));
@@ -2084,7 +2091,14 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   let EXT_ESTADO = "";     // "" · "leyendo" · "version" (falta el Apps Script 6) · "error"
   function indexarExterno() {
     EXT_IDX = {};
+    EXT_BASE = new Map();
     if (!EXT || !Array.isArray(EXT.productos)) return;
+    EXT.productos.forEach((x) => {
+      const b = activoBase(x.nombre);
+      if (!b) return;
+      if (!EXT_BASE.has(b)) EXT_BASE.set(b, []);
+      EXT_BASE.get(b).push(x.nombre);
+    });
     let nuevos = 0;
     const porNombre = (nombre) => S.depositos.find((d) => slug(d.nombre) === slug(nombre));
     const dep = (nombre) => {
@@ -2101,7 +2115,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     EXT.productos.forEach((x) => {
       const f = EXT_IDX[slug(x.nombre)] = {};
       const sumar = (id, sub, v) => {
-        if (!id || !v) return;
+        if (!id || !(v > 0)) return;   // lo negativo de la planilla (pendiente de ingresar) cuenta como 0
         f[id] = f[id] || { cerrado: 0, abierto: 0 };
         f[id][sub] += v;
       };
@@ -2116,11 +2130,46 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     });
     if (nuevos) save();
   }
+  // ── Cruce producto de la app ↔ fila de la planilla ──
+  // 1) mismo nombre; 2) el principio activo igual al nombre de la planilla;
+  // 3) el mismo principio activo sin la concentración («DICAMBA 57,8%» →
+  // «Dicamba 48%»). Si en la planilla hay varias filas de ese activo
+  // (S-Metolacloro 48% y 96%), se elige la de igual concentración; si ninguna
+  // coincide, no se cruza (mejor sin stock que el de otro producto).
+  const PALABRAS_FORMULA = new Set(["sl", "ec", "wg", "wp", "sc", "sg", "ew", "cs", "od", "se", "sp", "gr", "me", "ebc", "lts", "ltr", "kg"]);
+  function activoBase(t) {
+    return sinAcentos(t).replace(/[0-9]+([.,][0-9]+)?\s*%?/g, " ").split(/[^a-z]+/)
+      .filter((w) => w.length > 2 && !PALABRAS_FORMULA.has(w)).join(" ");
+  }
+  function concentracion(t) {
+    const m = String(t || "").match(/([0-9]+(?:[.,][0-9]+)?)/);
+    return m ? parseFloat(m[1].replace(",", ".")) : null;
+  }
+  let EXT_BASE = new Map();   // activoBase → [nombres de la planilla]
+  function filaPlanilla(p) {
+    if (!EXT || !p) return "";
+    if (typeof p === "string") return EXT_IDX[slug(p)] ? p : "";
+    let r = "";
+    if (EXT_IDX[slug(p.marca)]) r = p.marca;
+    else if (p.pa && EXT_IDX[slug(p.pa)]) r = p.pa;
+    else if (p.pa) {
+      const cands = EXT_BASE.get(activoBase(p.pa)) || [];
+      if (cands.length === 1) r = cands[0];
+      else if (cands.length > 1) {
+        const c = concentracion(p.pa);
+        const iguales = cands.filter((n) => c != null && concentracion(n) === c);
+        if (iguales.length === 1) r = iguales[0];
+      }
+    }
+    return r;
+  }
+  const extDe = (p) => { const n = filaPlanilla(p); return n ? EXT_IDX[slug(n)] : null; };
+
   /** El saldo que mira la orden: el de la planilla si está leída; si no, el de la app. */
   function saldoOT(prodId, depId, sub) {
     if (!EXT || esTransito(depId)) return saldo(prodId, depId, sub);
     const p = prodById(prodId);
-    const f = p && EXT_IDX[slug(p.marca)];
+    const f = extDe(p);
     if (!f) return 0;
     const de = (v) => !v ? 0 : sub === "abierto" ? v.abierto : sub === "cerrado" ? v.cerrado : v.cerrado + v.abierto;
     if (depId) return de(f[depId]);
@@ -2131,7 +2180,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const zona = zonaDeOT();
     const deps = (zona ? depositosDeZona(zona) : S.depositos).filter(sirveA(OT));
     if (EXT) {
-      const f = EXT_IDX[slug(typeof p === "string" ? p : p.marca)];
+      const f = extDe(p);
       return f ? deps.reduce((a, d) => a + (f[d.id] ? f[d.id].cerrado + f[d.id].abierto : 0), 0) : 0;
     }
     return typeof p === "string" ? 0 : deps.reduce((a, d) => a + saldo(p.id, d.id), 0);
@@ -2152,6 +2201,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       EXT_ESTADO = "";
       indexarExterno();
       renderOT();
+      fillTipos(); renderStock();
       if (avisar) toast("Stock leído de «" + EXT.nombre + "»: " + EXT.productos.length + " productos");
     }).catch((e) => {
       EXT_ESTADO = String(e && e.message) === "version" ? "version" : "error";
@@ -2766,7 +2816,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const sel = `<select data-origen="${a.i}" style="font-size:12px;padding:4px 6px;margin-bottom:4px">${opcionesOrigen(it, zona, it.origen || "")}</select>`;
     const dep = f.dep ? esc(f.dep.nombre) : "—";
     const sv = f.dep && !EXT ? sinVerificar(it.prod, f.dep.id) : 0;
-    const aviso = sv > 0.0001 ? `<div style="font-size:10.5px;color:#be123c;font-weight:700">incluye ${fmt(sv, 1)} sin verificar</div>` : "";
+    const fila = EXT ? filaPlanilla(p) : "";
+    const aviso = (sv > 0.0001 ? `<div style="font-size:10.5px;color:#be123c;font-weight:700">incluye ${fmt(sv, 1)} sin verificar</div>` : "") +
+      (EXT && !fila ? `<div style="font-size:10.5px;color:#be123c">no está en la planilla «${esc(EXT.nombre)}»</div>`
+        : fila && slug(fila) !== slug(p.marca) ? `<div style="font-size:10.5px;color:#64748b">en la planilla: ${esc(fila)}</div>` : "");
     if (f.estado === "ok") {
       return `${sel}<div><span class="badge b-green">${dep}</span></div>${aviso}`;
     }
@@ -4483,12 +4536,106 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }));
   }
 
+  const verPlanilla = () => !!EXT && $("stock-fuente").value !== "app";
+
+  /**
+   * Existencias con el stock de la planilla «Stock Tarpuy»: una fila por
+   * producto de la planilla, con los productos de la app que se cruzan con
+   * ella (por nombre o principio activo). Busca también por esos nombres.
+   */
+  function filasPlanilla(q, tipo, soloCon, idsVis) {
+    const vinculados = new Map();   // slug planilla → [productos de la app]
+    S.catalogo.forEach((p) => {
+      const n = filaPlanilla(p);
+      if (!n) return;
+      const k = slug(n);
+      if (!vinculados.has(k)) vinculados.set(k, []);
+      vinculados.get(k).push(p);
+    });
+    const qs = sinAcentos(q).split(/\s+/).filter(Boolean);
+    return EXT.productos.map((x) => {
+      const f = EXT_IDX[slug(x.nombre)] || {};
+      const app = vinculados.get(slug(x.nombre)) || [];
+      const de = (id, sub) => !f[id] ? 0 : sub ? f[id][sub] : f[id].cerrado + f[id].abierto;
+      const total = idsVis.reduce((a, id) => a + de(id), 0);
+      return { x, f, app, de, total };
+    }).filter((r) => {
+      if (soloCon && !(r.total > 0.0001)) return false;
+      if (tipo && r.x.tipo !== tipo) return false;
+      if (qs.length) {
+        const txt = sinAcentos([r.x.nombre].concat(r.app.map((p) => p.marca + " " + p.pa)).join(" "));
+        if (!coincide(txt, qs)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderStockPlanilla(q, tipo, soloCon, deps) {
+    const idsVis = deps.map((d) => d.id);
+    const unoSolo = deps.length === 1;
+    const parcial = deps.length < S.depositos.length;
+    const colsDep = unoSolo ? [] : deps;
+    const tituloTotal = unoSolo ? deps[0].nombre : (parcial ? "Total selección" : "Total");
+    const filas = filasPlanilla(q, tipo, soloCon, idsVis);
+    const leida = EXT.actualizado ? "modificada el " + fechaHora(EXT.actualizado) : "leída el " + fechaHora(EXT.leido);
+
+    $("stock-head").innerHTML = `<tr>
+      <th style="min-width:190px">Producto <span style="font-weight:400;text-transform:none;letter-spacing:0">· planilla «${esc(EXT.nombre)}», ${esc(leida)}</span></th>
+      <th>Tipo</th>
+      ${colsDep.map((d) => `<th class="num">${esc(d.nombre)}</th>`).join("")}
+      <th class="num">${esc(tituloTotal)}</th>
+      <th class="num">USD/u</th>
+      <th class="num">Valorizado</th>
+    </tr>`;
+
+    if (!filas.length) {
+      $("stock-body").innerHTML = `<tr><td colspan="${colsDep.length + 5}" class="empty">Sin productos que coincidan en la planilla.</td></tr>`;
+      $("stock-foot").innerHTML = "";
+      return;
+    }
+    let valorTotal = 0;
+    $("stock-body").innerHTML = filas.map((r) => {
+      const precio = r.app.reduce((a, p) => a || ultimoPrecio(p.id), 0);
+      const valor = r.total * precio;
+      valorTotal += valor;
+      const abiertoVis = idsVis.reduce((a, id) => a + r.de(id, "abierto"), 0);
+      const enApp = r.app.filter((p) => slug(p.marca) !== slug(r.x.nombre)).map((p) => p.marca);
+      return `<tr>
+        <td><strong>${esc(r.x.nombre)}</strong>${enApp.length ? `<br><span style="font-size:11px;color:#94a3b8">en la app: ${esc(enApp.join(" · "))}</span>` : ""}</td>
+        <td><span class="badge ${TIPO_BADGE[r.x.tipo] || "b-gray"}">${esc(r.x.tipo)}</span></td>
+        ${colsDep.map((d) => {
+          const v = r.de(d.id), ab = r.de(d.id, "abierto");
+          return `<td class="num" style="${v > 0 ? "" : "color:#cbd5e1"}">${v > 0.0001 ? fmt(v, 2) : "—"}${
+            ab > 0.0001 ? `<div style="font-size:10px;color:#b45309;font-weight:600">${fmt(ab, 2)} en Rincón</div>` : ""}</td>`;
+        }).join("")}
+        <td class="num"><strong>${fmt(r.total, 2)}</strong> <span style="font-size:11px;color:#94a3b8">${esc(r.x.unidad)}</span>
+          ${abiertoVis > 0.0001 ? `<div style="font-size:10px;color:#b45309;font-weight:600">${fmt(abiertoVis, 2)} en Rincón</div>` : ""}</td>
+        <td class="num" style="color:#64748b">${precio ? fmt(precio, 2) : "—"}</td>
+        <td class="num">${valor ? "$" + fmt(valor, 0) : "—"}</td>
+      </tr>`;
+    }).join("");
+    $("stock-foot").innerHTML = `<tr>
+      <td colspan="${colsDep.length + 4}" style="text-align:right;font-weight:800;color:#475569;padding-top:11px">
+        Valorización ${parcial ? "de la selección" : "total"} (últ. precio de compra)
+      </td>
+      <td class="num" style="font-weight:800;font-size:15px;padding-top:11px">$${fmt(valorTotal, 0)}</td>
+    </tr>`;
+  }
+
   function renderStock() {
     const q = ($("stock-buscar").value || "").toLowerCase();
     const tipo = $("stock-filtro-tipo").value;
     const soloCon = $("stock-solo-con").checked;
 
     renderChipsDepositos();
+
+    $("stock-fuente-campo").style.display = EXT ? "" : "none";
+    $("stock-solo-con-txt").textContent = verPlanilla() ? "Sólo productos con stock" : "Sólo productos con movimientos";
+    if (verPlanilla()) {
+      renderStockPlanilla(q, tipo, soloCon, depositosVisibles());
+      renderStockKPIs(); renderTransito(); renderAbiertos(); renderVerificar(); renderConfirmar();
+      return;
+    }
 
     const deps = depositosVisibles();
     const idsVis = deps.map((d) => d.id);
@@ -4504,10 +4651,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       .filter((m) => idsVis.indexOf(m.deposito) !== -1 || esTransito(m.deposito))
       .map((m) => m.prod));
 
+    const qs = sinAcentos(q).split(/\s+/).filter(Boolean);
     const filas = S.catalogo.filter((p) => {
       if (soloCon && !conMov.has(p.id)) return false;
       if (tipo && p.tipo !== tipo) return false;
-      if (q && (p.marca + " " + p.pa).toLowerCase().indexOf(q) === -1) return false;
+      if (qs.length && !coincide(sinAcentos(p.marca + " " + p.pa), qs)) return false;
       return true;
     });
 
@@ -5224,7 +5372,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   function fillTipos() {
-    const tipos = Array.from(new Set(S.catalogo.map((p) => p.tipo))).sort();
+    const tipos = Array.from(new Set(S.catalogo.map((p) => p.tipo).concat(EXT ? EXT.productos.map((x) => x.tipo) : []))).sort();
     [["stock-filtro-tipo"], ["cat-filtro-tipo"]].forEach(([id]) => {
       const sel = $(id), actual = sel.value;
       sel.innerHTML = '<option value="">Todos</option>' + tipos.map((t) => `<option>${esc(t)}</option>`).join("");
@@ -5263,6 +5411,16 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const tipo = $("stock-filtro-tipo").value;
     const soloCon = $("stock-solo-con").checked;
     const conMov = new Set(S.movimientos.filter((m) => idsVis.indexOf(m.deposito) !== -1).map((m) => m.prod));
+
+    if (verPlanilla()) {
+      const fp = filasPlanilla(q, tipo, soloCon, idsVis);
+      const h = ["Producto (planilla)", "En la app", "Tipo", "Unidad"].concat(deps.map((d) => d.nombre), ["Total"]);
+      const lin = fp.map((r) => [r.x.nombre, r.app.map((p) => p.marca).join(" · "), r.x.tipo, r.x.unidad]
+        .concat(deps.map((d) => r.de(d.id)), [r.total]).map(csvCell).join(","));
+      descargar("iag-stock-planilla.csv", [h.map(csvCell).join(",")].concat(lin).join("\n"));
+      toast(lin.length + " producto(s) de la planilla exportado(s)");
+      return;
+    }
 
     const head = ["Producto", "Principio activo", "Tipo", "Unidad"]
       .concat(deps.map((d) => d.nombre), ["Total", "Mínimo", "USD/u", "Valorizado"]);
@@ -5395,7 +5553,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-variedad").addEventListener("input", () => { OT.variedad = $("ot-variedad").value; OT.variedadAMano = true; });
 
     // Stock
-    ["stock-buscar", "stock-filtro-tipo", "stock-solo-con"].forEach((id) => $(id).addEventListener("input", renderStock));
+    ["stock-buscar", "stock-filtro-tipo", "stock-solo-con", "stock-fuente"].forEach((id) => $(id).addEventListener("input", renderStock));
     $("export-stock").addEventListener("click", exportarStock);
 
     // Movimientos
@@ -5460,7 +5618,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=36");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=37");
   load();
   vincularConRegistro();
   nuevaOT();
