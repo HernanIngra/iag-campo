@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=41" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=42" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -1006,20 +1006,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=41"></script>
-<script src="campania.js?v=41"></script>
-<script src="stock-externo.js?v=41"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=41"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=41"></script>
-<script src="lotes-tarpuy.js?v=41" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=41" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=41"></script>
-<script src="senasa-catalogo.js?v=41" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=41" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=42"></script>
+<script src="campania.js?v=42"></script>
+<script src="stock-externo.js?v=42"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=42"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=42"></script>
+<script src="lotes-tarpuy.js?v=42" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=42" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=42"></script>
+<script src="senasa-catalogo.js?v=42" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=42" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=41" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=41"></script>
-<script src="nube.js?v=41"></script>
+<script src="semillas-catalogo.js?v=42" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=42"></script>
+<script src="nube.js?v=42"></script>
 
 <script>
 (function () {
@@ -4681,9 +4681,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("stock-head").innerHTML = `<tr>
       <th style="min-width:190px">Producto <span style="font-weight:400;text-transform:none;letter-spacing:0">· planilla «${esc(EXT.nombre)}», ${esc(leida)}</span></th>
       <th>Tipo</th>
+      ${TRANSITOS().map((t) => `<th class="num" style="color:#1d4ed8;background:#eff6ff" title="Salió del galpón con una orden y todavía no se confirmó la aplicación (dato de la app)">${esc(depById(t).nombre)}</th>`).join("")}
       ${colsDep.map((d) => `<th class="num">${esc(d.nombre)}</th>`).join("")}
       <th class="num">${esc(tituloTotal)}</th>
-      ${TRANSITOS().map((t) => `<th class="num" title="Salió del galpón con una orden y todavía no se confirmó la aplicación (dato de la app)">${esc(depById(t).nombre)}</th>`).join("")}
       <th class="num">USD/u</th>
       <th class="num">Valorizado</th>
     </tr>`;
@@ -4703,6 +4703,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       return `<tr>
         <td><strong>${esc(r.x.nombre)}</strong>${enApp.length ? `<br><span style="font-size:11px;color:#94a3b8">en la app: ${esc(enApp.join(" · "))}</span>` : ""}</td>
         <td><span class="badge ${TIPO_BADGE[r.x.tipo] || "b-gray"}">${esc(r.x.tipo)}</span></td>
+        ${r.transitos.map((t) => `<td class="num" style="background:#f5f9ff;${t > 0.0001 ? "color:#1d4ed8;font-weight:700" : "color:#cbd5e1"}">${t > 0.0001 ? fmt(t, 2) : "—"}</td>`).join("")}
         ${colsDep.map((d) => {
           const v = r.de(d.id), ab = r.de(d.id, "abierto");
           return `<td class="num" style="${v > 0 ? "" : "color:#cbd5e1"}">${v > 0.0001 ? fmt(v, 2) : "—"}${
@@ -4710,7 +4711,6 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         }).join("")}
         <td class="num"><strong>${fmt(r.total, 2)}</strong> <span style="font-size:11px;color:#94a3b8">${esc(r.x.unidad)}</span>
           ${abiertoVis > 0.0001 ? `<div style="font-size:10px;color:#b45309;font-weight:600">${fmt(abiertoVis, 2)} en Rincón</div>` : ""}</td>
-        ${r.transitos.map((t) => `<td class="num" style="${t > 0.0001 ? "color:#1d4ed8;font-weight:700" : "color:#cbd5e1"}">${t > 0.0001 ? fmt(t, 2) : "—"}</td>`).join("")}
         <td class="num" style="color:#64748b">${precio ? fmt(precio, 2) : "—"}</td>
         <td class="num">${valor ? "$" + fmt(valor, 0) : "—"}</td>
       </tr>`;
@@ -5732,7 +5732,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=41");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=42");
   load();
   vincularConRegistro();
   nuevaOT();
