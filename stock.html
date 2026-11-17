@@ -104,6 +104,12 @@
   .btn-ghost { background: #fff; color: #475569; border-color: #cbd5e1; }
   .btn-danger { background: #fff; color: #b91c1c; border-color: #fecaca; }
   .btn-borrar { background: #dc2626; color: #fff; }
+  /* Número de paso en los botones de la orden (va por CSS: los textos cambian solos) */
+  .btn[data-paso]::before {
+    content: attr(data-paso); display: inline-flex; align-items: center; justify-content: center;
+    width: 21px; height: 21px; margin-right: 7px; border-radius: 50%; flex-shrink: 0;
+    font-size: 12px; font-weight: 800; line-height: 1; border: 2px solid currentColor;
+  }
   .link.borrar-todo { color: #fff; background: #dc2626; border-radius: 6px; padding: 3px 8px; }
   .btn-sm { padding: 5px 11px; font-size: 12px; }
   .btn-row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 16px; }
@@ -283,7 +289,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=37" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=38" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -494,14 +500,17 @@
       </div>
 
       <div class="hint" id="ot-estado-nota" style="margin-top:12px"></div>
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="ot-save">Guardar orden</button>
-        <button class="btn btn-primary" id="ot-remito">🚚 Registro de salida</button>
-        <button class="btn btn-green" id="ot-confirm">Confirmar aplicación</button>
-        <button class="btn btn-green" id="ot-retorno" style="display:none">↩ Confirmar retorno</button>
-        <button class="btn btn-ghost" id="ot-print">📄 PDF para el aplicador</button>
-        <button class="btn btn-green" id="ot-registro" style="display:none">📄 Registro de la aplicación</button>
-        <button class="btn btn-green" id="ot-compartir">📲 Compartir (WhatsApp)</button>
+      <!-- Los pasos de la orden, en el orden en que se hacen (17/11) -->
+      <div class="btn-row pasos-ot">
+        <button class="btn btn-ghost" id="ot-save" data-paso="1">Guardar orden</button>
+        <button class="btn btn-ghost" id="ot-print" data-paso="2">📄 PDF para el aplicador</button>
+        <button class="btn btn-green" id="ot-compartir" data-paso="2">📲 Compartir (WhatsApp)</button>
+        <button class="btn btn-primary" id="ot-remito" data-paso="3">🚚 Registro de salida</button>
+        <button class="btn btn-green" id="ot-confirm" data-paso="4">Confirmar aplicación</button>
+        <button class="btn btn-green" id="ot-retorno" data-paso="5" style="display:none">↩ Confirmar retorno</button>
+        <button class="btn btn-green" id="ot-registro" data-paso="6" style="display:none">📄 Registro de la aplicación</button>
+      </div>
+      <div class="btn-row" style="margin-top:6px">
         <button class="btn btn-ghost" id="ot-clear">Limpiar</button>
         <button class="btn btn-ghost" id="ot-siembra">🌱 Nueva orden de siembra</button>
         <button class="btn btn-borrar" id="ot-borrar-todo" style="display:none">⛔ Borrar aplicación</button>
@@ -982,20 +991,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=37"></script>
-<script src="campania.js?v=37"></script>
-<script src="stock-externo.js?v=37"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=37"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=37"></script>
-<script src="lotes-tarpuy.js?v=37" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=37" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=37"></script>
-<script src="senasa-catalogo.js?v=37" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=37" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=38"></script>
+<script src="campania.js?v=38"></script>
+<script src="stock-externo.js?v=38"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=38"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=38"></script>
+<script src="lotes-tarpuy.js?v=38" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=38" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=38"></script>
+<script src="senasa-catalogo.js?v=38" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=38" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=37" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=37"></script>
-<script src="nube.js?v=37"></script>
+<script src="semillas-catalogo.js?v=38" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=38"></script>
+<script src="nube.js?v=38"></script>
 
 <script>
 (function () {
@@ -3423,7 +3432,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       // El reporte no movió stock: se descarta y vuelve a «en tránsito»
       if (!confirm("Anular el reporte de " + o.numero + "? Vuelve a quedar en tránsito, para confirmar.")) return;
       delete o.reporte;
-      (o.items || []).forEach((it) => { delete it.usado; delete it.remanente; delete it.dosisReal; });
+      (o.items || []).forEach((it) => { delete it.usado; delete it.remanente; delete it.dosisReal; delete it.volvio; });
       o.estado = "transito";
       if (OT && OT.id === id) OT = JSON.parse(JSON.stringify(o));
       save(); renderAll(); return toast("Reporte anulado");
@@ -3433,6 +3442,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       quitar = (m) => m.otId === id && (m.tipo === "uso" || m.tipo === "retorno");
       estado = "transito"; msg = "Aplicación anulada — el producto vuelve a estar en tránsito";
       delete o.retorno;
+      // Lo confirmado (usado, remanente, lo que volvió) se borra: si no, el registro lo seguía mostrando
+      (o.items || []).forEach((it) => { delete it.usado; delete it.remanente; delete it.dosisReal; delete it.volvio; });
     } else {
       const txt = o.estado === "transito"
         ? "Anular la salida de " + o.numero + "? El producto vuelve al depósito de donde salió."
@@ -3930,6 +3941,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         });
         f.it.usado = usado;
         f.it.remanente = rem[i];
+        delete f.it.volvio;   // de un retorno anterior (si la aplicación se anuló y se vuelve a confirmar)
         f.it.dosisReal = haReal > 0 ? usado / haReal : 0;   // en la unidad base, por ha
       });
       OT.haReal = haReal;
@@ -4460,7 +4472,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       const cambio = it.cambioDe && prodById(it.cambioDe) ? "\nen lugar de " + prodById(it.cambioDe).marca : "";
       return [p.marca + cambio, fmt(num(it.dosis), 3) + " " + it.unidad, fmt(dreal, 3) + " " + p.unidad + "/ha",
               fmt(num(it.retirado), 2) + " " + p.unidad, fmt(num(it.usado), 2) + " " + p.unidad,
-              it.volvio != null ? fmt(num(it.volvio), 2) + " " + p.unidad : num(it.remanente) > 0.0001 ? "pendiente" : "—"];
+              OT.retorno === "hecho" && it.volvio != null ? fmt(num(it.volvio), 2) + " " + p.unidad : num(it.remanente) > 0.0001 ? "pendiente" : "—"];
     }), { columnStyles: { 0: { fontStyle: "bold" }, 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } } });
 
     // De dónde salió cada cosa y con qué remito
@@ -5618,7 +5630,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=37");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=38");
   load();
   vincularConRegistro();
   nuevaOT();
