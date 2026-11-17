@@ -216,7 +216,7 @@
     var k = Object.keys(zs);
     return k.length === 1 ? (ZONA_TXT[k[0]] || k[0]) : k.length ? "Mezcladas" : "";
   }
-  var OT_DATOS = ["campania", "mojado", "tanque", "lotes", "remito", "retorno", "haReal", "deposito", "reporte", "salidas", "variedad"];
+  var OT_DATOS = ["campania", "mojado", "tanque", "lotes", "remito", "retorno", "haReal", "deposito", "reporte", "salidas", "variedad", "historial"];
   function filaOT(S, o) {
     var resto = {};
     OT_DATOS.forEach(function (k) { if (o[k] !== undefined) resto[k] = o[k]; });
