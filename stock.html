@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=40" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=41" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -1006,20 +1006,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=40"></script>
-<script src="campania.js?v=40"></script>
-<script src="stock-externo.js?v=40"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=40"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=40"></script>
-<script src="lotes-tarpuy.js?v=40" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=40" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=40"></script>
-<script src="senasa-catalogo.js?v=40" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=40" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=41"></script>
+<script src="campania.js?v=41"></script>
+<script src="stock-externo.js?v=41"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=41"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=41"></script>
+<script src="lotes-tarpuy.js?v=41" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=41" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=41"></script>
+<script src="senasa-catalogo.js?v=41" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=41" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=40" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=40"></script>
-<script src="nube.js?v=40"></script>
+<script src="semillas-catalogo.js?v=41" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=41"></script>
+<script src="nube.js?v=41"></script>
 
 <script>
 (function () {
@@ -4655,9 +4655,11 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       const app = vinculados.get(slug(x.nombre)) || [];
       const de = (id, sub) => !f[id] ? 0 : sub ? f[id][sub] : f[id].cerrado + f[id].abierto;
       const total = idsVis.reduce((a, id) => a + de(id), 0);
-      return { x, f, app, de, total };
+      // En tránsito: sale de la app (lo que salió con una orden y no se confirmó)
+      const transitos = TRANSITOS().map((t, i) => app.reduce((a, p) => a + saldo(p.id, t) + (i === 0 ? saldo(p.id, TRANSITO) : 0), 0));
+      return { x, f, app, de, total, transitos };
     }).filter((r) => {
-      if (soloCon && !(r.total > 0.0001)) return false;
+      if (soloCon && !(r.total > 0.0001) && !r.transitos.some((v) => v > 0.0001)) return false;
       if (tipo && r.x.tipo !== tipo) return false;
       if (qs.length) {
         const txt = sinAcentos([r.x.nombre].concat(r.app.map((p) => p.marca + " " + p.pa)).join(" "));
@@ -4681,12 +4683,13 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       <th>Tipo</th>
       ${colsDep.map((d) => `<th class="num">${esc(d.nombre)}</th>`).join("")}
       <th class="num">${esc(tituloTotal)}</th>
+      ${TRANSITOS().map((t) => `<th class="num" title="Salió del galpón con una orden y todavía no se confirmó la aplicación (dato de la app)">${esc(depById(t).nombre)}</th>`).join("")}
       <th class="num">USD/u</th>
       <th class="num">Valorizado</th>
     </tr>`;
 
     if (!filas.length) {
-      $("stock-body").innerHTML = `<tr><td colspan="${colsDep.length + 5}" class="empty">Sin productos que coincidan en la planilla.</td></tr>`;
+      $("stock-body").innerHTML = `<tr><td colspan="${colsDep.length + 5 + TRANSITOS().length}" class="empty">Sin productos que coincidan en la planilla.</td></tr>`;
       $("stock-foot").innerHTML = "";
       return;
     }
@@ -4707,12 +4710,13 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         }).join("")}
         <td class="num"><strong>${fmt(r.total, 2)}</strong> <span style="font-size:11px;color:#94a3b8">${esc(r.x.unidad)}</span>
           ${abiertoVis > 0.0001 ? `<div style="font-size:10px;color:#b45309;font-weight:600">${fmt(abiertoVis, 2)} en Rincón</div>` : ""}</td>
+        ${r.transitos.map((t) => `<td class="num" style="${t > 0.0001 ? "color:#1d4ed8;font-weight:700" : "color:#cbd5e1"}">${t > 0.0001 ? fmt(t, 2) : "—"}</td>`).join("")}
         <td class="num" style="color:#64748b">${precio ? fmt(precio, 2) : "—"}</td>
         <td class="num">${valor ? "$" + fmt(valor, 0) : "—"}</td>
       </tr>`;
     }).join("");
     $("stock-foot").innerHTML = `<tr>
-      <td colspan="${colsDep.length + 4}" style="text-align:right;font-weight:800;color:#475569;padding-top:11px">
+      <td colspan="${colsDep.length + 4 + TRANSITOS().length}" style="text-align:right;font-weight:800;color:#475569;padding-top:11px">
         Valorización ${parcial ? "de la selección" : "total"} (últ. precio de compra)
       </td>
       <td class="num" style="font-weight:800;font-size:15px;padding-top:11px">$${fmt(valorTotal, 0)}</td>
@@ -5511,9 +5515,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
     if (verPlanilla()) {
       const fp = filasPlanilla(q, tipo, soloCon, idsVis);
-      const h = ["Producto (planilla)", "En la app", "Tipo", "Unidad"].concat(deps.map((d) => d.nombre), ["Total"]);
+      const h = ["Producto (planilla)", "En la app", "Tipo", "Unidad"].concat(deps.map((d) => d.nombre), ["Total"], TRANSITOS().map((t) => depById(t).nombre));
       const lin = fp.map((r) => [r.x.nombre, r.app.map((p) => p.marca).join(" · "), r.x.tipo, r.x.unidad]
-        .concat(deps.map((d) => r.de(d.id)), [r.total]).map(csvCell).join(","));
+        .concat(deps.map((d) => r.de(d.id)), [r.total], r.transitos).map(csvCell).join(","));
       descargar("iag-stock-planilla.csv", [h.map(csvCell).join(",")].concat(lin).join("\n"));
       toast(lin.length + " producto(s) de la planilla exportado(s)");
       return;
@@ -5728,7 +5732,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=40");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=41");
   load();
   vincularConRegistro();
   nuevaOT();
