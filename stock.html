@@ -180,6 +180,12 @@
   .pend-grupo:first-child { margin-top: 0; }
   .pend-t { display: flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
   .pend-fila { cursor: pointer; }
+  .btn-sigue { display: inline-flex; align-items: center; gap: 7px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    border: none; border-radius: 8px; padding: 6px 12px 6px 7px; color: #fff; background: #1d4ed8; margin-right: 10px; }
+  .btn-sigue.verde { background: #15803d; }
+  .btn-sigue .np { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid currentColor; font-size: 11.5px; font-weight: 800; }
+  .link.sigue-alt { font-size: 12.5px; color: #1d4ed8; margin-right: 10px; }
   .pend-fila td { vertical-align: top; }
   .pend-fila:hover td { background: #eff6ff; }
   .pend-t span { font-size: 12px; font-weight: 600; color: #94a3b8; }
@@ -297,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=39" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=40" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -1000,20 +1006,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=39"></script>
-<script src="campania.js?v=39"></script>
-<script src="stock-externo.js?v=39"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=39"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=39"></script>
-<script src="lotes-tarpuy.js?v=39" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=39" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=39"></script>
-<script src="senasa-catalogo.js?v=39" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=39" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=40"></script>
+<script src="campania.js?v=40"></script>
+<script src="stock-externo.js?v=40"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=40"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=40"></script>
+<script src="lotes-tarpuy.js?v=40" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=40" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=40"></script>
+<script src="senasa-catalogo.js?v=40" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=40" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=39" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=39"></script>
-<script src="nube.js?v=39"></script>
+<script src="semillas-catalogo.js?v=40" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=40"></script>
+<script src="nube.js?v=40"></script>
 
 <script>
 (function () {
@@ -3290,6 +3296,36 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    * Pendientes agrupadas por el paso que falta. Lo que le toca hacer a
    * Aplicación es lo mismo que Campo y Oficina miran para seguir la orden.
    */
+  /**
+   * El próximo paso de una orden pendiente (17/11), con el número del botón:
+   * 2 mandarla al aplicador (si todavía no se mandó) · 3 registro de salida ·
+   * 4 confirmar aplicación · 5 confirmar retorno. alt: un segundo paso posible.
+   */
+  function siguientePaso(o) {
+    const estado = o.estado || "borrador";
+    const zona = zonaDeOrden(o);
+    const hecho = (n) => (o.historial || []).some((h) => h.paso === n);
+    const salida = { n: 3, txt: "Registro de salida", btn: "ot-remito", ok: puedeEnZona("remitir", zona) };
+    if (estado === "borrador") {
+      const enviar = { n: 2, txt: "Mandar al aplicador", btn: "ot-compartir", ok: true, verde: true };
+      return hecho(2) ? { pri: salida } : { pri: enviar, alt: salida };
+    }
+    if (estado === "transito" && faltaRetirar(o).length)
+      return { pri: Object.assign({}, salida, { txt: "Completar salida" }), alt: { n: 4, txt: "Confirmar aplicación", btn: "ot-confirm", ok: puedeEnZona("confirmarOT", zona) } };
+    if (estado === "transito" || estado === "reportada")
+      return { pri: { n: 4, txt: "Confirmar aplicación", btn: "ot-confirm", ok: puedeEnZona("confirmarOT", zona), verde: true } };
+    if (estado === "aplicada" && o.retorno === "pendiente")
+      return { pri: { n: 5, txt: "Confirmar retorno", btn: "ot-retorno", ok: puedeEnZona("confirmarRetorno", zona), verde: true } };
+    return {};
+  }
+  /** Abre la orden y toca el botón de ese paso (con sus permisos y su registro de quién lo hizo). */
+  function hacerPaso(id, btnId) {
+    abrirOrden(id);
+    const b = $(btnId);
+    if (!b || b.disabled || b.style.display === "none") return toast(b && b.title ? b.title : "Ese paso no está disponible para esta orden");
+    b.click();
+  }
+
   function renderPendientes() {
     const cont = $("pend-lista");
     if (!cont) return;
@@ -3322,13 +3358,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
                 <div style="font-size:10.5px;color:#94a3b8;margin-top:2px">${esc(o.numero)} · ${esc(o.fecha || "")}${o.prueba ? '<span class="badge b-amber" style="margin-left:6px">PRUEBA</span>' : ""}</div></td>
               <td>${esc(o.cultivo || "—")}</td>
               <td>${prods.join("") || '<span style="color:#94a3b8">Sin productos</span>'}
-                <div style="margin-top:6px">${puede("borrarOT") && o.estado !== "aplicada" ? `<button class="link del" data-pend-borrar="${o.id}" style="margin-right:10px">🗑 Borrar orden</button>` : ""}<button class="link borrar-todo" data-pend-borrar-todo="${o.id}">⛔ Borrar aplicación</button></div></td>
+                <div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px 0">${(() => {
+                  const sp = siguientePaso(o);
+                  return (sp.pri && sp.pri.ok ? `<button class="btn-sigue${sp.pri.verde ? " verde" : ""}" data-pend-paso="${o.id}" data-btn="${sp.pri.btn}"><span class="np">${sp.pri.n}</span>${esc(sp.pri.txt)}</button>` : "") +
+                    (sp.alt && sp.alt.ok ? `<button class="link sigue-alt" data-pend-paso="${o.id}" data-btn="${sp.alt.btn}">o ${sp.alt.n} · ${esc(sp.alt.txt)}</button>` : "");
+                })()}${puede("borrarOT") && o.estado !== "aplicada" ? `<button class="link del" data-pend-borrar="${o.id}" style="margin-right:10px">🗑 Borrar orden</button>` : ""}<button class="link borrar-todo" data-pend-borrar-todo="${o.id}">⛔ Borrar aplicación</button></div></td>
             </tr>`;
           }).join("")}</tbody>
         </table></div></div>`;
     }).join("");
     cont.innerHTML = html || '<div class="empty">No hay órdenes pendientes' + (mias !== S.ordenes ? " en tu zona" : "") + ".</div>";
     cont.querySelectorAll("[data-pend-abrir]").forEach((b) => b.addEventListener("click", () => abrirOrden(b.dataset.pendAbrir)));
+    cont.querySelectorAll("[data-pend-paso]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); hacerPaso(b.dataset.pendPaso, b.dataset.btn); }));
     cont.querySelectorAll("[data-pend-borrar]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); borrarOrden(b.dataset.pendBorrar); }));
     cont.querySelectorAll("[data-pend-borrar-todo]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); borrarAbsoluto(b.dataset.pendBorrarTodo); }));
   }
@@ -5687,7 +5728,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=39");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=40");
   load();
   vincularConRegistro();
   nuevaOT();
