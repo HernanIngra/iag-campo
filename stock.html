@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=42" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=43" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -315,6 +315,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="ot">Orden de trabajo</button>
     <button class="tab" data-tab="pend">Órdenes pendientes</button>
+    <button class="tab" data-tab="plan">Planificación</button>
     <button class="tab" data-tab="stock">Stock</button>
     <button class="tab" data-tab="mov">Compras y movimientos</button>
     <button class="tab" data-tab="config">Depósitos · Lotes · Catálogo</button>
@@ -323,6 +324,27 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        ÓRDENES PENDIENTES
        ══════════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-plan">
+    <div class="block">
+      <div class="block-header">
+        <div class="block-num">🌱</div>
+        <div>
+          <div class="block-title">Planificación de los lotes</div>
+          <div class="block-sub">El cultivo al que va cada lote esta campaña. Se puede cambiar hasta que se siembra; después manda la orden de siembra.</div>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-bottom:10px">
+        <div class="field"><label class="fl">Campo</label><select id="plan-campo"><option value="">Todos</option></select></div>
+        <div class="field"><label class="fl">Buscar lote</label><input type="text" id="plan-buscar" placeholder="Ej. LI24" /></div>
+      </div>
+      <div id="plan-resumen" style="font-size:13px;color:#475569;margin-bottom:10px"></div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Lote</th><th class="num">ha</th><th style="width:240px">Cultivo</th><th>Estado</th><th>Último cambio</th></tr></thead>
+        <tbody id="plan-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+
   <div class="panel" id="panel-pend">
     <div class="block">
       <div class="block-header">
@@ -368,7 +390,7 @@
             <option value="">—</option>
             <option>Soja</option><option>Maíz</option><option>Trigo</option>
             <option>Poroto</option><option>Sorgo</option><option>Garbanzo</option>
-            <option>Mungo</option><option>Girasol</option><option>Barbecho</option>
+            <option>Mungo</option><option>Chía</option><option>Girasol</option><option>Barbecho</option>
           </select>
           <div class="fu" id="ot-cultivo-plan"></div>
         </div>
@@ -1006,20 +1028,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=42"></script>
-<script src="campania.js?v=42"></script>
-<script src="stock-externo.js?v=42"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=42"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=42"></script>
-<script src="lotes-tarpuy.js?v=42" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=42" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=42"></script>
-<script src="senasa-catalogo.js?v=42" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=42" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=43"></script>
+<script src="campania.js?v=43"></script>
+<script src="stock-externo.js?v=43"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=43"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=43"></script>
+<script src="lotes-tarpuy.js?v=43" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=43" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=43"></script>
+<script src="senasa-catalogo.js?v=43" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=43" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=42" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=42"></script>
-<script src="nube.js?v=42"></script>
+<script src="semillas-catalogo.js?v=43" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=43"></script>
+<script src="nube.js?v=43"></script>
 
 <script>
 (function () {
@@ -1302,6 +1324,14 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }
     S.remitoSeq = S.remitoSeq || 1;
     if (!Array.isArray(S.planificacion)) S.planificacion = [];
+    (function corregir1811() {
+      const de = (n) => S.planificacion.find((p) => slug(p.lote || "") === n);
+      const a = de("li24"), b = de("li25");
+      if (a && b && slug(a.cultivo) === "soja" && slug(b.cultivo) === "chia") {
+        a.cultivo = "Chía"; b.cultivo = "Soja";
+        a.obs = b.obs = "Corregido el 18/11 (LI24 Chía, LI25 Soja)";
+      }
+    })();
     // "Por llegar" (no contaba en el stock) pasó a "sin verificar" (cuenta, con un
     // tilde pendiente). Las compras viejas ya recibidas se dan por verificadas.
     (S.movimientos || []).forEach((m) => {
@@ -2536,6 +2566,71 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     return OT.lotes.reduce((a, l) => a + num(l.ha), 0);
   }
 
+  // ── Planificación: el cultivo de cada lote, editable hasta la siembra (18/11) ──
+  const CULTIVOS_PLAN = ["Soja", "Maíz", "Maíz+brachiaria", "Chía", "Mungo", "Poroto blanco", "Poroto colorado", "Poroto negro",
+    "Trigo", "Garbanzo", "Sorgo", "Girasol", "Cártamo", "Barbecho"];
+  /** Fija el cultivo planificado de un lote (crea la fila si no estaba). */
+  function fijarPlan(loteId, cultivo) {
+    const l = loteById(loteId);
+    if (!l) return null;
+    const nom = slug(l.nombre);
+    let p = (S.planificacion || []).find((x) => x.loteId === loteId || slug(x.lote || "") === nom);
+    if (!p) {
+      p = { id: "plan-" + nom, lote: l.nombre, loteId, campo: nombreCampo(l.campo), zona: ZONAS[zonaDeCampo(l.campo)] || "", ha: num(l.ha), variedad: "", obs: "" };
+      S.planificacion.push(p);
+    }
+    p.loteId = loteId;
+    p.cultivo = cultivo;
+    const u = usuarioActual();
+    p.obs = "Cambiado por " + (u ? u.nombre : "sin usuario") + " el " + hoy();
+    return p;
+  }
+  function renderPlan() {
+    const body = $("plan-body");
+    if (!body) return;
+    const u = usuarioActual();
+    const lotes = (S.lotes || []).filter((l) => !(u && u.zona) || zonaDeCampo(l.campo) === u.zona);
+    const campos = Array.from(new Set(lotes.map((l) => l.campo))).sort();
+    const sc = $("plan-campo"), elegido = sc.value;
+    sc.innerHTML = '<option value="">Todos</option>' + campos.map((c) => `<option value="${esc(c)}">${esc(nombreCampo(c))}</option>`).join("");
+    sc.value = campos.indexOf(elegido) !== -1 ? elegido : "";
+    const q = slug($("plan-buscar").value || "");
+    const vis = lotes.filter((l) => (!sc.value || l.campo === sc.value) && (!q || slug(l.nombre).indexOf(q) !== -1))
+      .sort((a, b) => a.campo.localeCompare(b.campo) || a.nombre.localeCompare(b.nombre, "es", { numeric: true }));
+    const opciones = Array.from(new Set(CULTIVOS_PLAN.concat((S.planificacion || []).map((p) => p.cultivo).filter(Boolean))));
+    const ha = {};
+    let campoAnt = "";
+    body.innerHTML = vis.map((l) => {
+      const sem = window.IAgCampania.sembrado(S, l.id);
+      const p = planDe(l.id);
+      const c = p ? p.cultivo : "";
+      const k = sem ? sem.cultivo : c || "sin planificar";
+      ha[k] = (ha[k] || 0) + num(l.ha);
+      const puedeEditar = !u || puede("verPresupuesto") || puedeEnZona("emitirOT", zonaDeCampo(l.campo));
+      const cab = l.campo !== campoAnt ? `<tr><td colspan="5" style="background:#f8fafc;font-weight:800;color:#334155">${esc(nombreCampo(l.campo))}</td></tr>` : "";
+      campoAnt = l.campo;
+      const celda = sem
+        ? `<strong>${esc(sem.cultivo)}</strong>${sem.variedad ? ' <span style="color:#64748b">' + esc(sem.variedad) + "</span>" : ""}`
+        : `<select data-plan="${esc(l.id)}" ${puedeEditar ? "" : "disabled"} style="font-size:13px;padding:4px 6px">
+            <option value="">— sin planificar —</option>${opciones.map((o) => `<option ${o === c ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+      return cab + `<tr>
+        <td><strong>${esc(l.nombre)}</strong></td>
+        <td class="num">${fmt(num(l.ha), 1)}</td>
+        <td>${celda}</td>
+        <td>${sem ? '<span class="badge b-green">sembrado</span>' : c ? '<span class="badge b-amber">planificado</span>' : '<span class="badge b-gray">sin planificar</span>'}</td>
+        <td style="font-size:12px;color:#94a3b8">${p && /^Cambiado por/.test(p.obs || "") ? esc(p.obs.replace(/^Cambiado por /, "")) : ""}</td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="5" class="empty">Sin lotes.</td></tr>';
+    $("plan-resumen").innerHTML = Object.keys(ha).sort((a, b) => ha[b] - ha[a]).map((k) => `<strong>${esc(k)}</strong> ${fmt(ha[k], 0)} ha`).join(" · ");
+    body.querySelectorAll("[data-plan]").forEach((sel) => sel.addEventListener("change", () => {
+      const l = loteById(sel.dataset.plan);
+      fijarPlan(sel.dataset.plan, sel.value);
+      save();
+      renderPlan(); renderOT();
+      toast((l ? l.nombre : "Lote") + ": " + (sel.value || "sin planificar"));
+    }));
+  }
+
   /** El cultivo planificado de un lote (pestaña Planificación de la planilla). */
   // Por id y, si no, por nombre del lote (un equipo con datos viejos puede tener otros ids)
   const planDe = (loteId) => {
@@ -2591,6 +2686,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     if (/sorgo/.test(t)) return "Sorgo";
     if (/garbanzo/.test(t)) return "Garbanzo";
     if (/mungo/.test(t)) return "Mungo";
+    if (/chia/.test(t)) return "Chía";
     const op = Array.from($("ot-cultivo").options).map((o) => o.value);
     if (op.indexOf(c) === -1) {   // chía, cártamo…: se suma a la lista
       const o = document.createElement("option"); o.textContent = c; $("ot-cultivo").appendChild(o);
@@ -3389,10 +3485,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const u = usuarioActual();
     const rol = u ? u.rol : "";
     const ORDEN = {
-      gerente: ["ot", "pend", "stock", "mov", "config"],
-      encargado: ["ot", "pend", "stock", "mov"],
-      oficina: ["stock", "mov", "config"],
-    }[rol] || ["ot", "pend", "stock", "mov", "config"];
+      gerente: ["ot", "pend", "plan", "stock", "mov", "config"],
+      encargado: ["ot", "pend", "plan", "stock", "mov"],
+      oficina: ["stock", "plan", "mov", "config"],
+    }[rol] || ["ot", "pend", "plan", "stock", "mov", "config"];
     const tabs = document.querySelector(".tabs");
     document.querySelectorAll(".tab").forEach((t) => { t.style.display = ORDEN.indexOf(t.dataset.tab) === -1 ? "none" : ""; });
     ORDEN.forEach((k) => tabs.appendChild(document.querySelector('.tab[data-tab="' + k + '"]')));
@@ -5557,6 +5653,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   // ── Render global ──────────────────────────────────────────────────────
   function renderAll() {
     renderPendientes();
+    renderPlan();
     renderSociedad();
     fillTipos();
     renderOT();
@@ -5668,6 +5765,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
     // Stock
     ["stock-buscar", "stock-filtro-tipo", "stock-solo-con", "stock-fuente"].forEach((id) => $(id).addEventListener("input", renderStock));
+    ["plan-campo", "plan-buscar"].forEach((id) => $(id).addEventListener("input", renderPlan));
     $("export-stock").addEventListener("click", exportarStock);
 
     // Movimientos
@@ -5732,7 +5830,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=42");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=43");
   load();
   vincularConRegistro();
   nuevaOT();
