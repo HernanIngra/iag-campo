@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=47" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=48" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -315,6 +315,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="ot">Orden de trabajo</button>
     <button class="tab" data-tab="pend">Órdenes pendientes</button>
+    <button class="tab" data-tab="reg">Órdenes registradas</button>
     <button class="tab" data-tab="plan">Planificación</button>
     <button class="tab" data-tab="stock">Stock</button>
     <button class="tab" data-tab="mov">Compras y movimientos</button>
@@ -342,6 +343,31 @@
         <thead><tr><th>Lote</th><th class="num">ha</th><th style="width:240px">Cultivo</th><th>Estado</th><th>Último cambio</th></tr></thead>
         <tbody id="plan-body"></tbody>
       </table></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-reg">
+    <div class="block">
+      <div class="block-header">
+        <div class="block-num" style="background:#f1f5f9;color:#64748b">≡</div>
+        <div><div class="block-title">Órdenes registradas</div><div class="block-sub">Todas las órdenes, en cualquier estado</div></div>
+      </div>
+      <div class="toolbar" style="margin-bottom:10px">
+        <div class="field" style="flex:1;max-width:520px"><label class="fl">Buscar</label>
+          <input type="text" id="ot-list-buscar" placeholder="N° de orden, lote, producto, cultivo, aplicador, estado, remito…" /></div>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>N°</th><th>Fecha</th><th>Labor</th><th>Lotes</th>
+              <th class="num">ha</th><th>Productos</th><th>Estado</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="ot-list"></tbody>
+        </table>
+      </div>
+      <div class="hint" id="ot-list-nota"></div>
     </div>
   </div>
 
@@ -556,24 +582,6 @@
       <div id="ot-historial" class="ot-historial"></div>
     </div>
 
-    <div class="block">
-      <div class="block-header">
-        <div class="block-num" style="background:#f1f5f9;color:#64748b">≡</div>
-        <div><div class="block-title">Órdenes registradas</div></div>
-      </div>
-      <div class="tbl-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>N°</th><th>Fecha</th><th>Labor</th><th>Lotes</th>
-              <th class="num">ha</th><th>Productos</th><th>Estado</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="ot-list"></tbody>
-        </table>
-      </div>
-      <div class="hint" id="ot-list-nota"></div>
-    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════
@@ -1030,20 +1038,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=47"></script>
-<script src="campania.js?v=47"></script>
-<script src="stock-externo.js?v=47"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=47"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=47"></script>
-<script src="lotes-tarpuy.js?v=47" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=47" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=47"></script>
-<script src="senasa-catalogo.js?v=47" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=47" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=48"></script>
+<script src="campania.js?v=48"></script>
+<script src="stock-externo.js?v=48"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=48"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=48"></script>
+<script src="lotes-tarpuy.js?v=48" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=48" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=48"></script>
+<script src="senasa-catalogo.js?v=48" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=48" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=47" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=47"></script>
-<script src="nube.js?v=47"></script>
+<script src="semillas-catalogo.js?v=48" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=48"></script>
+<script src="nube.js?v=48"></script>
 
 <script>
 (function () {
@@ -1326,6 +1334,13 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }
     S.remitoSeq = S.remitoSeq || 1;
     if (!Array.isArray(S.planificacion)) S.planificacion = [];
+    // Una orden sin retiro registrado (borrador, sin salidas) no puede tener productos «retirados»:
+    // pasaba cuando se anulaba el retiro y los productos quedaban con lo retirado (OT-0002, 20/11),
+    // y entonces no dejaba registrar el retiro de nuevo.
+    (S.ordenes || []).forEach((o) => {
+      if ((o.estado || "borrador") !== "borrador" || (o.salidas || []).length || o.remito) return;
+      (o.items || []).forEach((it) => { delete it.retiros; delete it.retirado; delete it.origenRemito; delete it.salidaCompleta; });
+    });
     (function corregir1811() {
       const de = (n) => S.planificacion.find((p) => slug(p.lote || "") === n);
       const a = de("li24"), b = de("li25");
@@ -3312,7 +3327,15 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
           .filter(Boolean).join(" · ");
     }
     if (!mias.length) { body.innerHTML = '<tr><td colspan="8" class="empty">' + (S.ordenes.length ? "No hay órdenes de tu zona." : "Todavía no hay órdenes guardadas.") + '</td></tr>'; return; }
-    body.innerHTML = mias.slice().reverse().map((o) => {
+    // Buscador (20/11): todas las palabras tienen que aparecer en la orden
+    const qs = sinAcentos(($("ot-list-buscar") || {}).value || "").split(/\s+/).filter(Boolean);
+    const texto = (o) => sinAcentos([o.numero, o.fecha, o.labor, o.cultivo, o.variedad, o.responsable, o.obs, estadoDe(o).txt, o.prueba ? "prueba" : "",
+      o.lotes.map((l) => { const lo = loteById(l.loteId); return lo ? lo.nombre + " " + nombreCampo(lo.campo) : ""; }).join(" "),
+      o.items.map((i) => { const p = prodById(i.prod); return p ? p.marca + " " + (p.pa || "") : ""; }).join(" "),
+      (o.salidas || []).map((x) => x.numero + " " + (x.remito || "")).join(" "), o.remito ? o.remito.numero : ""].join(" "));
+    const vis = qs.length ? mias.filter((o) => coincide(texto(o), qs)) : mias;
+    if (!vis.length) { body.innerHTML = '<tr><td colspan="8" class="empty">Ninguna orden coincide con la búsqueda.</td></tr>'; return; }
+    body.innerHTML = vis.slice().reverse().map((o) => {
       const ha = o.lotes.reduce((a, l) => a + num(l.ha), 0);
       const lotes = o.lotes.map((l) => { const lo = loteById(l.loteId); return lo ? lo.nombre : "?"; }).join(", ");
       const prods = o.items.filter((i) => i.prod).map((i) => { const p = prodById(i.prod); return p ? p.marca : "?"; }).join(", ");
@@ -3488,10 +3511,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const u = usuarioActual();
     const rol = u ? u.rol : "";
     const ORDEN = {
-      gerente: ["ot", "pend", "plan", "stock", "mov", "config"],
-      encargado: ["ot", "pend", "plan", "stock", "mov"],
-      oficina: ["stock", "plan", "mov", "config"],
-    }[rol] || ["ot", "pend", "plan", "stock", "mov", "config"];
+      gerente: ["ot", "pend", "reg", "plan", "stock", "mov", "config"],
+      encargado: ["ot", "pend", "reg", "plan", "stock", "mov"],
+      oficina: ["stock", "plan", "reg", "mov", "config"],
+    }[rol] || ["ot", "pend", "reg", "plan", "stock", "mov", "config"];
     const tabs = document.querySelector(".tabs");
     document.querySelectorAll(".tab").forEach((t) => { t.style.display = ORDEN.indexOf(t.dataset.tab) === -1 ? "none" : ""; });
     ORDEN.forEach((k) => tabs.appendChild(document.querySelector('.tab[data-tab="' + k + '"]')));
@@ -6000,6 +6023,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // Stock
     ["stock-buscar", "stock-filtro-tipo", "stock-solo-con", "stock-fuente"].forEach((id) => $(id).addEventListener("input", renderStock));
     ["plan-campo", "plan-buscar"].forEach((id) => $(id).addEventListener("input", renderPlan));
+    $("ot-list-buscar").addEventListener("input", renderOTList);
     $("pend-multi").addEventListener("click", retiroMultiple);
     $("export-stock").addEventListener("click", exportarStock);
 
@@ -6065,7 +6089,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=47");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=48");
   load();
   vincularConRegistro();
   nuevaOT();
