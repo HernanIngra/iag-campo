@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=46" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=47" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -1030,20 +1030,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=46"></script>
-<script src="campania.js?v=46"></script>
-<script src="stock-externo.js?v=46"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=46"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=46"></script>
-<script src="lotes-tarpuy.js?v=46" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=46" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=46"></script>
-<script src="senasa-catalogo.js?v=46" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=46" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=47"></script>
+<script src="campania.js?v=47"></script>
+<script src="stock-externo.js?v=47"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=47"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=47"></script>
+<script src="lotes-tarpuy.js?v=47" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=47" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=47"></script>
+<script src="senasa-catalogo.js?v=47" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=47" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=46" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=46"></script>
-<script src="nube.js?v=46"></script>
+<script src="semillas-catalogo.js?v=47" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=47"></script>
+<script src="nube.js?v=47"></script>
 
 <script>
 (function () {
@@ -4260,7 +4260,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
           <tbody id="ci-body"></tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:10px">Si se aplicó todo lo que salió, «Se aplicó todo»: el remanente queda en 0 y la dosis real se ajusta a lo retirado. Si sobró, el remanente queda en tránsito hasta que se confirme que volvió al galpón.</div>
+      <div class="hint" style="margin-top:10px">Se puede cargar la dosis real o la <strong>cantidad total usada</strong> (por ejemplo 50 en lugar de 49,92): la otra se recalcula. Si se aplicó todo lo que salió, «Se aplicó todo»: el remanente queda en 0 y la dosis real se ajusta a lo retirado. Si sobró, el remanente queda en tránsito hasta que se confirme que volvió al galpón.</div>
       <div class="btn-row">
         <button class="btn btn-green" id="ci-confirmar">Confirmar y dar de baja lo usado</button>
         <button class="btn btn-ghost" id="ci-todo">✓ Se aplicó todo lo retirado</button>
@@ -4280,7 +4280,8 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
           <td class="num" style="color:#64748b">${fmt(f.ret, 2)} ${unidadLabel(f.p, f.ret)}</td>
           <td class="num"><input type="number" min="0" step="0.001" value="${d}" data-dreal="${i}" style="text-align:right" ${haReal > 0 ? "" : "disabled"} />
             <div style="font-size:10.5px;color:${Math.abs(d - plan) > 0.0005 ? "#b45309" : "#94a3b8"}">${f.p.unidad}/ha · plan ${fmt(plan, 3)}</div></td>
-          <td class="num" style="font-weight:700">${fmt(usado, 2)} ${unidadLabel(f.p, usado)}</td>
+          <td class="num"><input type="number" min="0" max="${f.ret}" step="0.01" value="${redondear(usado)}" data-usado="${i}" style="text-align:right;font-weight:700" />
+            <div style="font-size:10.5px;color:#94a3b8">${unidadLabel(f.p, usado)} en total</div></td>
           <td class="num"><input type="number" min="0" max="${f.ret}" step="0.01" value="${rem[i]}" data-rem="${i}" style="text-align:right" /></td>
           <td>${rem[i] > 0.0001 ? `<button class="btn btn-ghost btn-sm" data-todo="${i}" type="button" style="white-space:nowrap">Se aplicó todo</button>` : '<span class="badge b-green">todo</span>'}</td>
         </tr>`;
@@ -4294,6 +4295,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       $("ci-body").querySelectorAll("[data-todo]").forEach((b) => b.addEventListener("click", () => {
         const i = +b.dataset.todo;
         rem[i] = 0;
+        tocado[i] = true;
+        pintar();
+      }));
+      // Cantidad total usada (20/11): si tenía que usar 49,92 y usó 50, se carga 50 y la dosis real se recalcula
+      $("ci-body").querySelectorAll("[data-usado]").forEach((inp) => inp.addEventListener("change", () => {
+        const i = +inp.dataset.usado;
+        let usado = Math.max(0, num(inp.value));
+        if (usado > filas[i].ret + 0.0001) {
+          toast("Salió " + fmt(filas[i].ret, 2) + " con el retiro: no se puede usar más. Si salió más, completá el retiro de producto");
+          usado = filas[i].ret;
+        }
+        rem[i] = redondear(Math.max(0, filas[i].ret - usado));
         tocado[i] = true;
         pintar();
       }));
@@ -6052,7 +6065,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=46");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=47");
   load();
   vincularConRegistro();
   nuevaOT();
