@@ -64,7 +64,7 @@
   /* Dosis: en el teléfono la tabla se aprieta; que entren el número y las flechas */
   .in-dosis { min-width: 116px; padding: 8px 4px 8px 8px; text-align: right; font-variant-numeric: tabular-nums; }
   /*
-   * Teléfono: la tabla de productos de la orden y la del registro de salida
+   * Teléfono: la tabla de productos de la orden y la del retiro de producto
    * pasan a una tarjeta por fila (antes la dosis quedaba fuera de la pantalla,
    * a la derecha). Cada celda lleva su título.
    */
@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=45" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=46" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -543,10 +543,10 @@
         <button class="btn btn-ghost" id="ot-save" data-paso="1">Guardar orden</button>
         <button class="btn btn-ghost" id="ot-print" data-paso="2">📄 PDF para el aplicador</button>
         <button class="btn btn-green" id="ot-compartir" data-paso="2">📲 Compartir (WhatsApp)</button>
-        <button class="btn btn-primary" id="ot-remito" data-paso="3">🚚 Registro de salida</button>
+        <button class="btn btn-primary" id="ot-remito" data-paso="3">🚚 Retiro de producto</button>
         <button class="btn btn-green" id="ot-confirm" data-paso="4">Confirmar aplicación</button>
         <button class="btn btn-green" id="ot-retorno" data-paso="5" style="display:none">↩ Confirmar retorno</button>
-        <button class="btn btn-green" id="ot-registro" data-paso="6" style="display:none">📄 Registro de la aplicación</button>
+        <button class="btn btn-green" id="ot-registro" data-paso="6" style="display:none">📄 Registro final de aplicación</button>
       </div>
       <div class="btn-row" style="margin-top:6px">
         <button class="btn btn-ghost" id="ot-clear">Limpiar</button>
@@ -638,7 +638,7 @@
         <div class="block-num">⇄</div>
         <div>
           <div class="block-title">En tránsito por zona</div>
-          <div class="block-sub">Salió del galpón con un registro de salida y todavía no se confirmó la aplicación. Va en la zona de los lotes de la orden.</div>
+          <div class="block-sub">Salió del galpón con un retiro de producto y todavía no se confirmó la aplicación. Va en la zona de los lotes de la orden.</div>
         </div>
       </div>
       <div id="transito-zonas"></div>
@@ -1030,20 +1030,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=45"></script>
-<script src="campania.js?v=45"></script>
-<script src="stock-externo.js?v=45"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=45"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=45"></script>
-<script src="lotes-tarpuy.js?v=45" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=45" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=45"></script>
-<script src="senasa-catalogo.js?v=45" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=45" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=46"></script>
+<script src="campania.js?v=46"></script>
+<script src="stock-externo.js?v=46"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=46"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=46"></script>
+<script src="lotes-tarpuy.js?v=46" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=46" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=46"></script>
+<script src="senasa-catalogo.js?v=46" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=46" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=45" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=45"></script>
-<script src="nube.js?v=45"></script>
+<script src="semillas-catalogo.js?v=46" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=46"></script>
+<script src="nube.js?v=46"></script>
 
 <script>
 (function () {
@@ -2136,7 +2136,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 
   // ── Stock de la planilla «Stock Tarpuy» (4/11) ─────────────────────────
   // TPA pega ahí el stock real. Mientras esté leída, la orden de trabajo
-  // (la lista de productos, de qué depósito sale, el registro de salida) mira
+  // (la lista de productos, de qué depósito sale, el retiro de producto) mira
   // ese stock y no el que calcula la app con sus movimientos. El resto de la
   // app sigue igual. Columnas: «LYC» es lo de TPA guardado en Lartirigoyen
   // (Larti-TPA), «RINCON LAJITAS» sus envases abiertos, «Pendiente retirar
@@ -3221,10 +3221,10 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     poner("ot-remito", (estado === "borrador" || faltan.length) && !mezcla && puedeEnZona("remitir", zona),
           mezcla ? "Una orden no puede tener lotes de Norte y de Lajitas"
             : estado === "borrador" || faltan.length ? "La salida la registra " + ZONA_TXT(zona) : "Ya salió todo lo de la orden");
-    $("ot-remito").textContent = faltan.length ? "🚚 Completar salida (faltan " + faltan.length + ")" : "🚚 Registro de salida";
+    $("ot-remito").textContent = faltan.length ? "🚚 Completar retiro (faltan " + faltan.length + ")" : "🚚 Retiro de producto";
     $("ot-remito").style.display = estado === "aplicada" || (estado !== "borrador" && !faltan.length) ? "none" : "";
     poner("ot-confirm", (estado === "transito" || estado === "reportada") && puedeEnZona("confirmarOT", zona),
-          estado === "borrador" ? "Primero el registro de salida: el producto tiene que salir del galpón"
+          estado === "borrador" ? "Primero el retiro de producto: el producto tiene que salir del galpón"
             : estado === "aplicada" ? "La orden ya está aplicada" : "La aplicación la confirma " + ZONA_TXT(zona));
     if ($("ot-confirm")) $("ot-confirm").textContent = estado === "reportada" ? "Confirmar la aplicación reportada" : "Confirmar aplicación";
     const conRetorno = estado === "aplicada" && OT.retorno === "pendiente";
@@ -3262,7 +3262,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         : estado === "aplicada"
           ? "<strong>Aplicada</strong>" + (OT.haReal ? " sobre " + fmt(OT.haReal, 1) + " ha" : "") + ". Lo usado ya está dado de baja." +
             (OT.retorno === "pendiente" ? " <strong>Falta confirmar el retorno</strong> del remanente, que sigue en tránsito." : "") + htmlSalidas(OT)
-          : "El stock no se mueve al guardar la orden: baja con el <strong>registro de salida</strong> y queda en tránsito hasta confirmar la aplicación.";
+          : "El stock no se mueve al guardar la orden: baja con el <strong>retiro de producto</strong> y queda en tránsito hasta confirmar la aplicación.";
     }
 
     const btnMv = $("mv-add");
@@ -3396,20 +3396,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    */
   /**
    * El próximo paso de una orden pendiente (17/11), con el número del botón:
-   * 2 mandarla al aplicador (si todavía no se mandó) · 3 registro de salida ·
+   * 2 mandarla al aplicador (si todavía no se mandó) · 3 retiro de producto ·
    * 4 confirmar aplicación · 5 confirmar retorno. alt: un segundo paso posible.
    */
   function siguientePaso(o) {
     const estado = o.estado || "borrador";
     const zona = zonaDeOrden(o);
     const hecho = (n) => (o.historial || []).some((h) => h.paso === n);
-    const salida = { n: 3, txt: "Registro de salida", btn: "ot-remito", ok: puedeEnZona("remitir", zona) };
+    const salida = { n: 3, txt: "Retiro de producto", btn: "ot-remito", ok: puedeEnZona("remitir", zona) };
     if (estado === "borrador") {
       const enviar = { n: 2, txt: "Mandar al aplicador", btn: "ot-compartir", ok: true, verde: true };
       return hecho(2) ? { pri: salida } : { pri: enviar, alt: salida };
     }
     if (estado === "transito" && faltaRetirar(o).length)
-      return { pri: Object.assign({}, salida, { txt: "Completar salida" }), alt: { n: 4, txt: "Confirmar aplicación", btn: "ot-confirm", ok: puedeEnZona("confirmarOT", zona) } };
+      return { pri: Object.assign({}, salida, { txt: "Completar retiro" }), alt: { n: 4, txt: "Confirmar aplicación", btn: "ot-confirm", ok: puedeEnZona("confirmarOT", zona) } };
     if (estado === "transito" || estado === "reportada")
       return { pri: { n: 4, txt: "Confirmar aplicación", btn: "ot-confirm", ok: puedeEnZona("confirmarOT", zona), verde: true } };
     if (estado === "aplicada" && o.retorno === "pendiente")
@@ -3674,7 +3674,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   /**
-   * Registro de salida (antes «remito de salida»). El producto de una orden
+   * Retiro de producto (antes «remito de salida»). El producto de una orden
    * puede salir en varias tandas y de varios depósitos: cada tanda es un
    * registro con el número del remito en papel (si lo hay) y su foto. Lo que
    * sale baja del depósito y queda en el tránsito de la zona hasta que se
@@ -3756,7 +3756,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // Una o más líneas por producto: depósito (o su Rincón) y cantidad
     const lineas = pend.map((x) => sugerirSalida(x.it, x.p, x.falta, zona).map((l) => Object.assign(l, { sale: true })));
 
-    abrirModal("Registro de salida " + numero,
+    abrirModal("Retiro de producto " + numero,
       "Para " + OT.numero + (estado === "transito" ? " · lo que todavía falta retirar" : "") +
       ". Lo que sale baja del depósito y queda en tránsito " + (ZONAS[zona] || "") + " hasta que se confirme la aplicación.",
       `<div class="grid g3" style="margin-bottom:14px">
@@ -3906,7 +3906,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       if (!OT.remito) OT.remito = { numero, fecha, usuario: quien };
       S.remitoSeq = parseInt(numero.slice(3), 10) + 1;
       const faltan = faltaRetirar(OT).length;
-      marcarPaso(OT, 3, "Registro de salida " + numero + (remitos.length ? " (remito " + remitos.join(", ") + ")" : ""));
+      marcarPaso(OT, 3, "Retiro de producto " + numero + (remitos.length ? " (remito " + remitos.join(", ") + ")" : ""));
       guardarOT("transito");
       cerrarModal();
       renderAll();
@@ -3929,7 +3929,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   /**
-   * PDF del registro de salida (20/11), desde la ventana del registro.
+   * PDF del retiro de producto (20/11), desde la ventana del registro.
    * info: {numero, fecha, remito, ordenes:[o], cabeza:[…], filas:[[…]], nota}
    */
   function pdfSalida(info) {
@@ -3939,7 +3939,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     const ANCHO = 210, M = 14;
     let y = 18;
     doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(15, 23, 42);
-    doc.text("Registro de salida · " + info.numero, M, y);
+    doc.text("Retiro de producto · " + info.numero, M, y);
     doc.setFontSize(10); doc.setTextColor(100, 116, 139); doc.text("I.Ag", ANCHO - M, y, { align: "right" });
     y += 9;
     const u = usuarioActual();
@@ -3963,7 +3963,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     doc.setDrawColor(148, 163, 184); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(100, 116, 139);
     doc.line(M, y, M + 55, y); doc.text("Retiró", M, y + 5);
     doc.line(ANCHO - M - 55, y, ANCHO - M, y); doc.text("Entregó (depósito / comercio)", ANCHO - M - 55, y + 5);
-    entregarPDF(doc, info.numero + ".pdf", "Registro de salida " + info.numero);
+    entregarPDF(doc, info.numero + ".pdf", "Retiro de producto " + info.numero);
   }
 
   /**
@@ -3987,7 +3987,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     let g = null, sale = null, origen = "";
 
     abrirModal("Retirar un producto para varias órdenes · " + numero,
-      "Para cuando se retira de una vez lo de varias órdenes (por ejemplo, en el comercio). Queda un registro de salida en cada orden, con el mismo número y remito.",
+      "Para cuando se retira de una vez lo de varias órdenes (por ejemplo, en el comercio). Queda un retiro de producto en cada orden, con el mismo número y remito.",
       `<div class="grid g2" style="margin-bottom:12px">
         <div class="field"><label class="fl">1 · Producto</label>
           <select id="rm-prod"><option value="">Elegí el producto…</option>${lista.map((x, i) => {
@@ -4108,7 +4108,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
         o.salidas = (o.salidas || []).concat([{ id: sid, numero, remito: papel, fecha, usuario: quien, foto: archivo ? "pendiente" : "", varias: nums }]);
         if (!o.remito) o.remito = { numero, fecha, usuario: quien };
         if ((o.estado || "borrador") === "borrador") o.estado = "transito";
-        marcarPaso(o, 3, "Registro de salida " + numero + " · " + sale.marca + " (retiro de varias órdenes: " + nums.join(", ") + ")");
+        marcarPaso(o, 3, "Retiro de producto " + numero + " · " + sale.marca + " (retiro de varias órdenes: " + nums.join(", ") + ")");
       });
       S.remitoSeq = parseInt(numero.slice(3), 10) + 1;
       save();
@@ -4216,7 +4216,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
    * arrancan con lo reportado.
    */
   function confirmarOT() {
-    if ((OT.estado || "borrador") === "borrador") return toast("Primero el registro de salida");
+    if ((OT.estado || "borrador") === "borrador") return toast("Primero el retiro de producto");
     if (OT.estado === "aplicada") return toast("Esta orden ya fue aplicada");
     if (!puedeEnZona("confirmarOT", zonaDeOT())) return toast("La confirma el encargado de la zona");
     const haPlan = otHaTotal();
@@ -4430,7 +4430,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       guardarOT("aplicada");
       cerrarModal();
       renderAll();
-      toast("Retorno confirmado. Ya está el registro final de la aplicación: «📄 Registro de la aplicación»");
+      toast("Retorno confirmado. Ya está el registro final de aplicación: «📄 Registro final de aplicación»");
     });
     pintar();
   }
@@ -4829,7 +4829,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     };
 
     doc.setFont("helvetica", "bold"); doc.setFontSize(18); tinta();
-    doc.text("Registro de aplicación · " + OT.numero, M, y);
+    doc.text("Registro final de aplicación · " + OT.numero, M, y);
     doc.setFontSize(10); gris(); doc.text("I.Ag", ANCHO - M, y, { align: "right" });
     y += 7;
     const avisos = [];
@@ -5963,7 +5963,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     $("ot-print").addEventListener("click", () => { if (imprimirOT() !== false) pasoPDF("PDF para el aplicador"); });
     $("ot-registro").addEventListener("click", () => {
       if (OT.estado !== "aplicada") return imprimirRegistro();
-      marcarPaso(OT, 6, "Registro de la aplicación");
+      marcarPaso(OT, 6, "Registro final de aplicación");
       const g = S.ordenes.find((o) => o.id === OT.id);
       if (g) g.historial = OT.historial.slice();
       save(); renderHistorial();
@@ -6052,7 +6052,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=45");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=46");
   load();
   vincularConRegistro();
   nuevaOT();
