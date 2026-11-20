@@ -303,7 +303,7 @@
 <body>
 
 <header>
-  <a class="ir-inicio" href="index.html?v=44" title="Volver al inicio">⌂ Inicio</a>
+  <a class="ir-inicio" href="index.html?v=45" title="Volver al inicio">⌂ Inicio</a>
   <h1>Stock y Órdenes de Trabajo</h1>
   <p>Prototipo · datos en este navegador</p>
   <span class="spacer"></span>
@@ -353,6 +353,8 @@
           <div class="block-title">Órdenes pendientes</div>
           <div class="block-sub" id="pend-sub">Emitidas y todavía no aplicadas, según en qué paso están</div>
         </div>
+        <span class="spacer"></span>
+        <button class="btn btn-primary btn-sm" id="pend-multi" type="button">🚚 Retirar un producto para varias órdenes</button>
       </div>
       <div id="pend-lista"></div>
     </div>
@@ -1028,20 +1030,20 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
 <!-- Registro Nacional de Terapéutica Vegetal (SENASA).
      Los genera tools/fetch_senasa_catalogo.py. Si no están,
      el módulo sigue andando con el catálogo semilla. -->
-<script src="usuario.js?v=44"></script>
-<script src="campania.js?v=44"></script>
-<script src="stock-externo.js?v=44"></script>
-<script src="vendor/jspdf/jspdf.umd.min.js?v=44"></script>
-<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=44"></script>
-<script src="lotes-tarpuy.js?v=44" onerror="window.LOTES_FALTA=true"></script>
-<script src="aplicaciones-tarpuy.js?v=44" onerror="window.APLIC_FALTA=true"></script>
-<script src="campos-tarpuy.js?v=44"></script>
-<script src="senasa-catalogo.js?v=44" onerror="window.SENASA_FALTA=true"></script>
-<script src="senasa-dosis.js?v=44" onerror="window.SENASA_DOSIS_FALTA=true"></script>
+<script src="usuario.js?v=45"></script>
+<script src="campania.js?v=45"></script>
+<script src="stock-externo.js?v=45"></script>
+<script src="vendor/jspdf/jspdf.umd.min.js?v=45"></script>
+<script src="vendor/jspdf/jspdf.plugin.autotable.min.js?v=45"></script>
+<script src="lotes-tarpuy.js?v=45" onerror="window.LOTES_FALTA=true"></script>
+<script src="aplicaciones-tarpuy.js?v=45" onerror="window.APLIC_FALTA=true"></script>
+<script src="campos-tarpuy.js?v=45"></script>
+<script src="senasa-catalogo.js?v=45" onerror="window.SENASA_FALTA=true"></script>
+<script src="senasa-dosis.js?v=45" onerror="window.SENASA_DOSIS_FALTA=true"></script>
 <!-- Cultivares INASE, lo genera tools/build_semillas_catalogo.py -->
-<script src="semillas-catalogo.js?v=44" onerror="window.INASE_FALTA=true"></script>
-<script src="hojas.js?v=44"></script>
-<script src="nube.js?v=44"></script>
+<script src="semillas-catalogo.js?v=45" onerror="window.INASE_FALTA=true"></script>
+<script src="hojas.js?v=45"></script>
+<script src="nube.js?v=45"></script>
 
 <script>
 (function () {
@@ -3465,6 +3467,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }).join("");
     cont.innerHTML = html || '<div class="empty">No hay órdenes pendientes' + (mias !== S.ordenes ? " en tu zona" : "") + ".</div>";
     cont.querySelectorAll("[data-pend-abrir]").forEach((b) => b.addEventListener("click", () => abrirOrden(b.dataset.pendAbrir)));
+    if ($("pend-multi")) $("pend-multi").style.display = puede("remitir") && mias.some((o) => ["borrador", "transito"].indexOf(o.estado || "borrador") !== -1) ? "" : "none";
     cont.querySelectorAll("[data-pend-paso]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); hacerPaso(b.dataset.pendPaso, b.dataset.btn); }));
     cont.querySelectorAll("[data-pend-borrar]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); borrarOrden(b.dataset.pendBorrar); }));
     cont.querySelectorAll("[data-pend-borrar-todo]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); borrarAbsoluto(b.dataset.pendBorrarTodo); }));
@@ -3773,6 +3776,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       <div class="hint" style="margin-top:10px">Lo propuesto usa primero los envases abiertos del Rincón y después envases enteros. Si un producto sale de dos depósitos, «＋ Otro depósito». Si sale otra marca (mismo principio activo), «↔ Otro producto». Lo que no salga ahora queda para un próximo registro.</div>
       <div class="btn-row">
         <button class="btn btn-primary" id="rs-ok">Registrar salida</button>
+        <button class="btn btn-ghost" id="rs-pdf" type="button">📄 PDF del registro</button>
         <button class="btn btn-ghost" id="rs-cancelar">Cancelar</button>
       </div>`);
 
@@ -3860,6 +3864,18 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     }
 
     $("rs-cancelar").addEventListener("click", cerrarModal);
+    $("rs-pdf").addEventListener("click", () => {
+      const papel = $("rs-remito").value.trim();
+      const filas = [];
+      pend.forEach((x, i) => lineas[i].filter((l) => l.sale && num(l.cant) > 0.0001).forEach((l) => {
+        const d = depById(l.dep);
+        filas.push([x.p.marca, l.sub === "abierto" && d ? nombreRincon(d) : (d ? d.nombre : l.dep),
+          fmt(num(l.cant), 2) + " " + unidadLabel(x.p, num(l.cant)), (l.remito || "").trim() || (lineas[i][0].remito || "").trim() || papel || "—"]);
+      }));
+      if (!filas.length) return toast("No hay nada para retirar: tildá al menos un producto");
+      pdfSalida({ numero, fecha: $("rs-fecha").value || hoy(), remito: papel, ordenes: [OT],
+        cabeza: ["Producto", "Depósito", "Cantidad", "Remito"], filas });
+    });
     $("rs-ok").addEventListener("click", () => {
       const salen = lineas.map((ls) => ls.filter((l) => l.sale && num(l.cant) > 0.0001));
       if (!salen.some((ls) => ls.length)) return toast("No hay nada para retirar: tildá al menos un producto");
@@ -3896,6 +3912,211 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       renderAll();
       if (archivo) guardarFotoRemito(OT.id, sid, archivo, [OT.numero, remitos.length ? "remito " + remitos.join(", ") : numero].join(" · "));
       toast("Salida " + numero + " registrada" + (faltan ? " · faltan " + faltan + " producto(s) por retirar" : " · ya salió todo lo de la orden"));
+    });
+    pintar();
+  }
+
+  /** Entrega un PDF: en el teléfono, el menú de compartir; en la computadora, se descarga. */
+  function entregarPDF(doc, nombre, titulo) {
+    let archivo = null;
+    try { archivo = new File([doc.output("blob")], nombre, { type: "application/pdf" }); } catch (e) { archivo = null; }
+    if (esCelular() && archivo && navigator.canShare && navigator.canShare({ files: [archivo] })) {
+      navigator.share({ files: [archivo], title: titulo }).catch(() => { /* lo canceló */ });
+      return;
+    }
+    doc.save(nombre);
+    toast("PDF generado: " + nombre);
+  }
+
+  /**
+   * PDF del registro de salida (20/11), desde la ventana del registro.
+   * info: {numero, fecha, remito, ordenes:[o], cabeza:[…], filas:[[…]], nota}
+   */
+  function pdfSalida(info) {
+    const jsPDFns = window.jspdf;
+    if (!jsPDFns || !jsPDFns.jsPDF) return toast("No se cargó el generador de PDF");
+    const doc = new jsPDFns.jsPDF({ unit: "mm", format: "a4" });
+    const ANCHO = 210, M = 14;
+    let y = 18;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(15, 23, 42);
+    doc.text("Registro de salida · " + info.numero, M, y);
+    doc.setFontSize(10); doc.setTextColor(100, 116, 139); doc.text("I.Ag", ANCHO - M, y, { align: "right" });
+    y += 9;
+    const u = usuarioActual();
+    const ords = info.ordenes.map((o) => o.numero + " (" + o.lotes.map((x) => { const l = loteById(x.loteId); return l ? l.nombre : "?"; }).join(", ") + ")");
+    const datos = [["Fecha", info.fecha || hoy()], ["Remito", info.remito || "—"],
+      [info.ordenes.length > 1 ? "Órdenes" : "Orden", ords.join(" · ")], ["Registró", u ? u.nombre : "—"]];
+    doc.setFontSize(11);
+    datos.forEach(([k, v]) => {
+      doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139); doc.text(k, M, y);
+      doc.setFont("helvetica", "bold"); doc.setTextColor(15, 23, 42);
+      const lineas = doc.splitTextToSize(String(v), ANCHO - 2 * M - 32);
+      doc.text(lineas, M + 32, y);
+      y += 6 * lineas.length;
+    });
+    if (info.nota) { doc.setFont("helvetica", "bold"); doc.setTextColor(180, 83, 9); doc.text(doc.splitTextToSize(info.nota, ANCHO - 2 * M), M, y + 2); y += 9; }
+    y += 3;
+    doc.autoTable({ startY: y, head: [info.cabeza], body: info.filas,
+      styles: { fontSize: 10.5, cellPadding: 2, valign: "middle" },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255 }, margin: { left: M, right: M } });
+    y = doc.lastAutoTable.finalY + 26;
+    doc.setDrawColor(148, 163, 184); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(100, 116, 139);
+    doc.line(M, y, M + 55, y); doc.text("Retiró", M, y + 5);
+    doc.line(ANCHO - M - 55, y, ANCHO - M, y); doc.text("Entregó (depósito / comercio)", ANCHO - M - 55, y + 5);
+    entregarPDF(doc, info.numero + ".pdf", "Registro de salida " + info.numero);
+  }
+
+  /**
+   * Retirar un producto para varias órdenes (20/11): cuando se va al comercio
+   * y se retira de una vez lo de varias órdenes. 1) el producto, 2) las
+   * órdenes pendientes que lo tienen (con cuánto le falta a cada una),
+   * 3) si salió otra marca comercial, se cambia en todas. Un solo registro de
+   * salida (mismo número y remito) queda en cada orden.
+   */
+  function retiroMultiple() {
+    const grupos = new Map();   // prodId → {p, filas:[{o, it, falta}]}
+    ordenesDelUsuario().filter((o) => ["borrador", "transito"].indexOf(o.estado || "borrador") !== -1 && puedeEnZona("remitir", zonaDeOrden(o)) && !mezclaZonas(o))
+      .forEach((o) => faltaRetirar(o).forEach((x) => {
+        if (!grupos.has(x.p.id)) grupos.set(x.p.id, { p: x.p, filas: [] });
+        grupos.get(x.p.id).filas.push({ o, it: x.it, falta: redondear(x.falta), sale: true, cant: redondear(x.falta) });
+      }));
+    if (!grupos.size) return toast("No hay órdenes pendientes con productos por retirar");
+    const lista = Array.from(grupos.values()).sort((a, b) => b.filas.length - a.filas.length || a.p.marca.localeCompare(b.p.marca));
+    const numero = siguienteNumero("RS-", S.ordenes.reduce((a, o) =>
+      a.concat(o.remito ? [o.remito.numero] : [], (o.salidas || []).map((x) => x.numero)), []), S.remitoSeq);
+    let g = null, sale = null, origen = "";
+
+    abrirModal("Retirar un producto para varias órdenes · " + numero,
+      "Para cuando se retira de una vez lo de varias órdenes (por ejemplo, en el comercio). Queda un registro de salida en cada orden, con el mismo número y remito.",
+      `<div class="grid g2" style="margin-bottom:12px">
+        <div class="field"><label class="fl">1 · Producto</label>
+          <select id="rm-prod"><option value="">Elegí el producto…</option>${lista.map((x, i) => {
+            const tot = x.filas.reduce((a, f) => a + f.falta, 0);
+            return `<option value="${i}">${esc(x.p.marca)} · faltan ${fmt(tot, 1)} ${esc(unidadLabel(x.p, tot))} en ${x.filas.length} ${x.filas.length > 1 ? "órdenes" : "orden"}</option>`;
+          }).join("")}</select></div>
+        <div class="field"><label class="fl">Fecha</label><input type="date" id="rm-fecha" value="${hoy()}" /></div>
+      </div>
+      <div id="rm-area"></div>
+      <div class="grid g2" style="margin-top:12px">
+        <div class="field"><label class="fl">N° de remito</label><input type="text" id="rm-remito" placeholder="Ej. 0001-00012345" /></div>
+        <div class="field"><label class="fl">Foto del remito</label><input type="file" id="rm-foto" accept="image/*" capture="environment" />
+          <div class="fu">Se guarda en la carpeta «Remitos» del Drive</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="rm-ok">Registrar salida</button>
+        <button class="btn btn-ghost" id="rm-pdf" type="button">📄 PDF del registro</button>
+        <button class="btn btn-ghost" id="rm-cancelar">Cancelar</button>
+      </div>`);
+
+    const zonasDe = () => Array.from(new Set(g.filas.map((f) => zonaDeOrden(f.o)).filter(Boolean)));
+    function opcionesOrigen() {
+      const zs = zonasDe();
+      const deps = S.depositos.slice().sort((a, b) => (zs.indexOf(b.zona) !== -1) - (zs.indexOf(a.zona) !== -1));
+      const op = (d, sub) => {
+        const v = d.id + "|" + sub, h = saldoOT(sale.id, d.id, sub);
+        return `<option value="${v}" ${v === origen ? "selected" : ""}>${esc(sub === "abierto" ? nombreRincon(d) : d.nombre)} (${fmt(h, 1)})</option>`;
+      };
+      const rincones = deps.filter((d) => tieneRincon(d) && saldoOT(sale.id, d.id, "abierto") > 0.0001);
+      return deps.map((d) => op(d, "cerrado")).join("") + rincones.map((d) => op(d, "abierto")).join("");
+    }
+    function pintar() {
+      if (!g) { $("rm-area").innerHTML = '<div class="hint">Elegí el producto: aparecen las órdenes pendientes que lo llevan.</div>'; return; }
+      if (!origen) {
+        const conStock = S.depositos.find((d) => saldoOT(sale.id, d.id, "cerrado") > 0.0001 && zonasDe().indexOf(d.zona) !== -1);
+        origen = (conStock || S.depositos.find((d) => zonasDe().indexOf(d.zona) !== -1) || S.depositos[0]).id + "|cerrado";
+      }
+      const total = g.filas.filter((f) => f.sale).reduce((a, f) => a + num(f.cant), 0);
+      const [dep, sub] = origen.split("|");
+      const disp = saldoOT(sale.id, dep, sub);
+      $("rm-area").innerHTML = `
+        <div class="grid g2" style="margin-bottom:10px">
+          <div class="field"><label class="fl">Sale</label>
+            <div><strong>${esc(sale.marca)}</strong>${sale.id !== g.p.id ? ` <span class="badge b-amber">en lugar de ${esc(g.p.marca)}</span>` : ""}
+              <button class="link" id="rm-cambiar" type="button" style="margin-left:8px">↔ Cambió la marca comercial</button>
+              ${sale.id !== g.p.id ? '<button class="link" id="rm-original" type="button" style="margin-left:8px">volver a ' + esc(g.p.marca) + "</button>" : ""}</div>
+            <div id="rm-busca" style="display:none;margin-top:6px"><input type="text" class="ac-input" placeholder="Buscar la marca que sale…" autocomplete="off" /></div>
+            ${sale.id !== g.p.id ? '<div class="fu" style="color:#b45309">Se cambia en las órdenes tildadas. Revisá la dosis si es de otra concentración.</div>' : ""}</div>
+          <div class="field"><label class="fl">De qué depósito o comercio</label>
+            <select id="rm-dep">${opcionesOrigen()}</select>
+            ${total - disp > 0.0001 ? `<div style="font-size:11px;color:#be123c;font-weight:700">sin stock suficiente: queda en ${fmt(disp - total, 1)}</div>` : ""}</div>
+        </div>
+        <div class="tbl-scroll"><table>
+          <thead><tr><th style="width:34px">Sale</th><th>2 · Orden</th><th>Lotes</th><th class="num">Le falta</th><th class="num" style="width:130px">Cantidad</th></tr></thead>
+          <tbody>${g.filas.map((f, i) => `<tr>
+            <td><input type="checkbox" data-rm-sale="${i}" ${f.sale ? "checked" : ""} style="width:auto;transform:scale(1.25)" /></td>
+            <td><strong>${esc(f.o.numero)}</strong> <span style="color:#94a3b8;font-size:12px">${esc(ZONAS[zonaDeOrden(f.o)] || "")}${f.o.prueba ? " · prueba" : ""}</span></td>
+            <td>${esc(f.o.lotes.map((x) => { const l = loteById(x.loteId); return l ? l.nombre : "?"; }).join(", "))}</td>
+            <td class="num" style="color:#64748b">${fmt(f.falta, 2)} ${esc(unidadLabel(g.p, f.falta))}</td>
+            <td class="num"><input type="number" min="0" step="${envaseDe(sale) || 0.01}" value="${f.cant}" data-rm-cant="${i}" style="text-align:right" /></td>
+          </tr>`).join("")}
+          <tr><td></td><td colspan="3" style="text-align:right;font-weight:800">Total</td><td class="num" style="font-weight:800">${fmt(total, 2)} ${esc(unidadLabel(sale, total))}</td></tr></tbody>
+        </table></div>`;
+      $("rm-dep").addEventListener("change", () => { origen = $("rm-dep").value; pintar(); });
+      $("rm-area").querySelectorAll("[data-rm-sale]").forEach((c) => c.addEventListener("change", () => { g.filas[+c.dataset.rmSale].sale = c.checked; pintar(); }));
+      $("rm-area").querySelectorAll("[data-rm-cant]").forEach((inp) => inp.addEventListener("change", () => {
+        const f = g.filas[+inp.dataset.rmCant]; f.cant = Math.max(0, num(inp.value)); f.sale = f.cant > 0; pintar();
+      }));
+      $("rm-cambiar").addEventListener("click", () => {
+        const caja = $("rm-busca"); caja.style.display = "";
+        const inp = caja.querySelector("input");
+        autocompletar(inp, (prod) => {
+          sale = prod; pintar();
+          toast("Sale " + sale.marca + " en lugar de " + g.p.marca);
+        });
+        inp.focus();
+      });
+      if ($("rm-original")) $("rm-original").addEventListener("click", () => { sale = g.p; pintar(); });
+    }
+    $("rm-prod").addEventListener("change", () => {
+      g = $("rm-prod").value === "" ? null : lista[+$("rm-prod").value];
+      sale = g ? g.p : null; origen = "";
+      pintar();
+    });
+    $("rm-cancelar").addEventListener("click", cerrarModal);
+    const tildadas = () => g ? g.filas.filter((f) => f.sale && num(f.cant) > 0.0001) : [];
+    const lugar = () => { const [dep, sub] = origen.split("|"); const d = depById(dep); return sub === "abierto" && d ? nombreRincon(d) : (d ? d.nombre : dep); };
+    $("rm-pdf").addEventListener("click", () => {
+      const fs = tildadas();
+      if (!fs.length) return toast("Elegí el producto y al menos una orden");
+      const tot = fs.reduce((a, f) => a + num(f.cant), 0);
+      pdfSalida({ numero, fecha: $("rm-fecha").value || hoy(), remito: $("rm-remito").value.trim(), ordenes: fs.map((f) => f.o),
+        nota: sale.marca + (sale.id !== g.p.id ? " (en lugar de " + g.p.marca + ")" : "") + " · de " + lugar() + " · total " + fmt(tot, 2) + " " + unidadLabel(sale, tot),
+        cabeza: ["Orden", "Lotes", "Producto", "Cantidad"],
+        filas: fs.map((f) => [f.o.numero, f.o.lotes.map((x) => { const l = loteById(x.loteId); return l ? l.nombre : "?"; }).join(", "), sale.marca,
+          fmt(num(f.cant), 2) + " " + unidadLabel(sale, num(f.cant))]) });
+    });
+    $("rm-ok").addEventListener("click", () => {
+      const fs = tildadas();
+      if (!fs.length) return toast("Elegí el producto y al menos una orden");
+      const fecha = $("rm-fecha").value || hoy();
+      const quien = (usuarioActual() || {}).id || "";
+      const papel = $("rm-remito").value.trim();
+      const [dep, sub] = origen.split("|");
+      const sid = uid();
+      const archivo = $("rm-foto").files && $("rm-foto").files[0];
+      const nums = fs.map((f) => f.o.numero);
+      fs.forEach((f) => {
+        const o = f.o;
+        // Si salió otra marca, la orden la toma (como «↔ Otro producto» en el registro de una orden)
+        const it = sale.id !== f.it.prod ? cambiarProducto(o, f.it, sale) : f.it;
+        const cant = redondear(num(f.cant));
+        alTransito([{ dep, sub, cant }], { fecha, prod: sale.id, precio: 0, ref: papel || numero, otId: o.id,
+          nota: o.numero + " · " + (o.labor || "") + " · " + numero + " (retiro de varias órdenes)", usuario: quien }, transitoDeOT(o));
+        it.retiros = (it.retiros || []).concat([Object.assign({ dep, sub, cant, salida: sid }, papel ? { remito: papel } : {})]);
+        it.retirado = redondear(it.retiros.reduce((a, r) => a + num(r.cant), 0));
+        if (!it.origenRemito) it.origenRemito = dep;
+        o.salidas = (o.salidas || []).concat([{ id: sid, numero, remito: papel, fecha, usuario: quien, foto: archivo ? "pendiente" : "", varias: nums }]);
+        if (!o.remito) o.remito = { numero, fecha, usuario: quien };
+        if ((o.estado || "borrador") === "borrador") o.estado = "transito";
+        marcarPaso(o, 3, "Registro de salida " + numero + " · " + sale.marca + " (retiro de varias órdenes: " + nums.join(", ") + ")");
+      });
+      S.remitoSeq = parseInt(numero.slice(3), 10) + 1;
+      save();
+      if (OT) { const ab = S.ordenes.find((o) => o.id === OT.id); if (ab) OT = JSON.parse(JSON.stringify(ab)); }
+      cerrarModal();
+      renderAll();
+      if (archivo) guardarFotoRemito(fs[0].o.id, sid, archivo, [numero, sale.marca, nums.join(" ")].concat(papel ? ["remito " + papel] : []).join(" · "));
+      toast("Salida " + numero + " registrada en " + fs.length + (fs.length > 1 ? " órdenes" : " orden") + ": " + nums.join(", "));
     });
     pintar();
   }
@@ -3941,9 +4162,9 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     subiendoFotos = true;
     ids.reduce((cadena, sid) => cadena.then(() => nube.subirFoto(pend[sid].nombre, pend[sid].data).then((r) => {
       if (!r || !r.ok) throw new Error((r && r.error) || "no se pudo subir");
-      const o = S.ordenes.find((x) => x.id === pend[sid].otId);
-      const s = o && (o.salidas || []).find((x) => x.id === sid);
-      if (s) { s.foto = r.url; if (OT && OT.id === o.id) OT = JSON.parse(JSON.stringify(o)); save(); }
+      let hubo = false;
+      S.ordenes.forEach((o) => (o.salidas || []).forEach((x) => { if (x.id === sid) { x.foto = r.url; hubo = true; } }));
+      if (hubo) { if (OT) { const g = S.ordenes.find((x) => x.id === OT.id); if (g) OT = JSON.parse(JSON.stringify(g)); } save(); }
       const resto = leerFotosPend(); delete resto[sid];
       try { localStorage.setItem(FOTOS_PEND, JSON.stringify(resto)); } catch (e) { /* se reintenta */ }
     })), Promise.resolve())
@@ -3956,7 +4177,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   function redondear(v) { return Math.round(v * 1000) / 1000; }
 
   /** Sale de los galpones (cada parte de su depósito y substock) y entra al tránsito. */
-  function alTransito(partes, base) {
+  function alTransito(partes, base, destino) {
     const link = uid();
     const mov = (extra) => S.movimientos.push(Object.assign({}, base, { id: uid(), tipo: "remito", link }, extra));
     let total = 0;
@@ -3965,7 +4186,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
       mov({ deposito: x.dep, sub: x.sub, cant: -x.cant });
       total += x.cant;
     });
-    mov({ deposito: transitoDeOT(OT), sub: "cerrado", cant: total });
+    mov({ deposito: destino || transitoDeOT(OT), sub: "cerrado", cant: total });
   }
 
   /**
@@ -5766,6 +5987,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
     // Stock
     ["stock-buscar", "stock-filtro-tipo", "stock-solo-con", "stock-fuente"].forEach((id) => $(id).addEventListener("input", renderStock));
     ["plan-campo", "plan-buscar"].forEach((id) => $(id).addEventListener("input", renderPlan));
+    $("pend-multi").addEventListener("click", retiroMultiple);
     $("export-stock").addEventListener("click", exportarStock);
 
     // Movimientos
@@ -5830,7 +6052,7 @@ Amistar Xtra,Azoxistrobina 20% + Ciproconazole 8%,Fungicida,L,0.3"></textarea>
   }
 
   // ── Init ───────────────────────────────────────────────────────────────
-  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=44");
+  $("barra-usuario").innerHTML = window.IAgUsuario.barra("index.html?v=45");
   load();
   vincularConRegistro();
   nuevaOT();
